@@ -1,3 +1,4 @@
+from fastapi.responses import FileResponse
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import requests
@@ -13,7 +14,7 @@ class AnalyzeRequest(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"status": "ok", "message": "Phishing Hub aktif ve dinliyor."}
+    return FileResponse("index.html")
 
 @app.post("/analyze/url")
 def analyze_phishing_url(request: AnalyzeRequest):

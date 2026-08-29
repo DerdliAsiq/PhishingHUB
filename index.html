@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Hub | İstihbarat Paneli</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e2f; color: #fff; padding: 40px 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 600px; background: #2a2a40; padding: 30px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); }
+        h2 { margin-top: 0; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }
+        input[type="text"] { width: 100%; padding: 12px; margin: 15px 0; border: none; border-radius: 6px; box-sizing: border-box; background: #1e1e2f; color: #fff; font-size: 16px; outline: none; }
+        input[type="text"]:focus { border: 1px solid #4CAF50; }
+        button { width: 100%; padding: 12px; background-color: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; }
+        button:hover { background-color: #45a049; }
+        #result { margin-top: 20px; padding: 15px; border-radius: 6px; display: none; word-wrap: break-word; line-height: 1.5; }
+        .loading { background-color: #d35400; }
+        .success { background-color: #27ae60; }
+        .danger { background-color: #c0392b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🚨 Phishing Analiz Merkezi</h2>
+        <p>Şüpheli bir bağlantıya tıkladıktan sonra, URL'yi analiz etmek için aşağıya girin:</p>
+        <input type="text" id="urlInput" placeholder="https://süpheli-link.com/aciliyet_fatura.exe">
+        <button onclick="analyzeUrl()">Analiz Et</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // ÖNEMLİ: Render.com'a deploy ettiğinde burayı kendi public URL'in ile değiştir
+        // Örnek: "https://senin-projen.onrender.com/analyze/url"
+        const API_ENDPOINT = "http://localhost:8000/analyze/url"; 
+
+        async function analyzeUrl() {
+            const url = document.getElementById('urlInput').value;
+            const resultDiv = document.getElementById('result');
+            
+            if(!url) {
+                alert("Hedef yok! Lütfen bir URL girin.");
+                return;
+            }
+
+            resultDiv.style.display = "block";
+            resultDiv.className = "loading";
+            resultDiv.innerHTML = "⏳ İstihbarat API'leri sorgulanıyor, bekleyin...";
+
+            try {
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+
+                if(response.ok) {
+                    resultDiv.className = "success";
+                    resultDiv.innerHTML = `
+                        <strong>Durum:</strong> ${data.message} <br>
+                        <strong>Taranan URL:</strong> ${data.url_scanned} <br>
+                        <strong>Aksiyon:</strong> ${data.action} <br>
+                        <strong>VT ID:</strong> <small>${data.vt_analysis_id}</small>
+                    `;
+                } else {
+                    resultDiv.className = "danger";
+                    resultDiv.innerHTML = `🔥 Kritik Hata: ${data.detail}`;
+                }
+            } catch (error) {
+                resultDiv.className = "danger";
+                resultDiv.innerHTML = "❌ Sunucuya ulaşılamadı. Uvicorn veya Render ayakta mı?";
+            }
+        }
+    </script>
+</body>
+</html>
+
+<script> etiketleri arasında bulunan API_ENDPOINT değişkenini bul.
+
+    Eski localhost değerini silip tam olarak şu şekilde güncelle:
+    const API_ENDPOINT = "[https://phishinghub.onrender.com/analyze/url](https://phishinghub.onrender.com/analyze/url)";
+
+    Dosyayı kaydet.
+
+Canlı Test İşleyişi
+index.html dosyasını tarayıcında açtıktan sonra girdiğin şüpheli bir link, doğrudan Render üzerindeki backend'ine POST edilecek. Sunucun koda gömdüğümüz API anahtarını kullanarak VirusTotal'i sorgulayacak ve dönen risk durumunu doğrudan ekrana yansıtacaktır. (Loglarda gördüğün 405 Method Not Allowed uyarısı, Render'ın uygulamanın ayakta olup olmadığını anlamak için attığı otomatik HEAD isteklerinden kaynaklanır ve çalışmaya hiçbir engeli yoktur.)
+API'ye yeni analiz modülleri ekleyelim mi?
+
+bu tasarimda yen iden yaz
+
+İstediğin "Signal Room" (PhishGuard) tasarımını, Render üzerindeki canlı [https://phishinghub.onrender.com](https://phishinghub.onrender.com) API'sine bağlı olarak tek ve çalışabilir bir HTML dosyası haline getirdim. Tasarımdaki Cobalt aksanları, fontları (Space Grotesk, IBM Plex Mono, vb.) ve tüm formasyonları statik bir CSS/HTML yapısında harmanladım.
+
+Your HTML file is ready:
+HTML simgesi
+index
+ HTML 
+
+Bu dosyayı indirip doğrudan tarayıcında açabilirsin. Arayüze şüpheli bir link yapıştırıp INITIATE SCAN butonuna bastığında, doğrudan arka plandaki (daha önce yazdığımız) Python koduna bağlanacak ve VT entegrasyonuyla sonucu ekrana yansıtacaktır. (Holberton'un NOPASSWD sevdalısı TassakliSabri kurbanımız için oldukça şık bir pasif güvenlik duvarı oldu!)
+
+
+Gemini bir yapay zeka modeli olduğu için hata yapabilir.
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>PhishGuard — Passive Security Workspace</title>    
+    <meta name="description" content="PhishGuard passive URL and QR security analysis workspace." />
+    
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { 
+            --paper: #f4f1ea; 
+            --paper-deep: #e9e5dc; 
+            --ink: #151719; 
+            --muted: #6f716f; 
+            --line: #d6d2c9; 
+            --cobalt: #2457e6; 
+            --cobalt-soft: #e8edff; 
+            --amber: #c8891c; 
+            --danger: #c64f44; 
+            --white: #fffdf9; 
+            --radius: 0.85rem; 
+            --ease-out: cubic-bezier(.23,1,.32,1); 
+        }
+        
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { margin: 0; background: var(--paper); color: var(--ink); font-family: "DM Sans", sans-serif; }
+        button, input { font: inherit; }
+        button { cursor: pointer; }
+        button:disabled { cursor: wait; opacity: .7; }
+        
+        .container { width: min(1180px, calc(100% - 56px)); margin: 0 auto; }
+        
+        .site-shell { 
+            min-height: 100vh; 
+            overflow: hidden; 
+            background: radial-gradient(circle at 80% 18%, rgba(36,87,230,.055), transparent 28rem), var(--paper); 
+        }
+        
+        .site-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            min-height: 82px; border-bottom: 1px solid var(--line); 
+        }
+        
+        .brand, .footer-brand { display: inline-flex; align-items: center; gap: 11px; text-decoration: none; color: var(--ink); }
+        .brand-mark { width: 30px; height: 30px; object-fit: contain; }
+        .brand-wordmark, .footer-brand span { font: 700 13px/1 "Space Grotesk", sans-serif; letter-spacing: .18em; text-transform: uppercase; }
+        
+        .header-actions { display: flex; align-items: center; gap: 25px; }
+        
+        .live-status, .hero-note, .footer-code, .workspace-index, .section-kicker, .eyebrow, 
+        .method-number, .count-badge, .panel-heading, .history-target span, .evidence-caption span { 
+            font: 500 10px/1.2 "IBM Plex Mono", monospace; letter-spacing: .1em; text-transform: uppercase; 
+        }
+        
+        .live-status { display: flex; align-items: center; gap: 7px; color: var(--muted); }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #63a66e; box-shadow: 0 0 0 4px rgba(99,166,110,.14); }
+        
+        .text-button, .inline-link { border: 0; background: transparent; color: var(--ink); display: inline-flex; align-items: center; gap: 7px; padding: 7px 0; font-size: 13px; font-weight: 600; text-decoration: none; }
+        .text-button:hover, .inline-link:hover { color: var(--cobalt); }
+        
+        .header-cta, .primary-button { 
+            border: 0; color: white; background: var(--ink); display: inline-flex; align-items: center; gap: 10px; 
+            font-size: 13px; font-weight: 700; padding: 13px 17px; transition: transform .16s var(--ease-out), background .2s; text-decoration: none;
+        }
+        .header-cta:hover, .primary-button:hover { background: var(--cobalt); transform: translateY(-2px); }
+        .header-cta:active, .primary-button:active, .analyze-button:active { transform: scale(.97); }
+        
+        .hero-section { display: grid; grid-template-columns: minmax(0, 1.03fr) minmax(420px, .97fr); gap: 84px; padding: 90px 0 106px; position: relative; }
+        .hero-section::after { content: ""; position: absolute; width: 210px; height: 1px; right: 0; bottom: 40px; background: var(--cobalt); opacity: .45; }
+        
+        .hero-copy { padding: 26px 0 0 54px; position: relative; }
+        .hero-copy::before { content: ""; position: absolute; left: 0; top: 33px; height: 320px; border-left: 1px solid var(--cobalt); opacity: .65; }
+        
+        .eyebrow { display: flex; align-items: center; gap: 10px; color: var(--cobalt); margin: 0 0 26px; }
+        .eyebrow-line { width: 28px; height: 1px; background: currentColor; }
+        
+        h1, h2, h3, p { margin-top: 0; }
+        h1 { max-width: 580px; margin-bottom: 25px; font: 600 clamp(3.4rem, 5.2vw, 5.2rem)/.97 "Space Grotesk", sans-serif; letter-spacing: -.07em; }
+        h1 em, .method-intro h2 em { color: var(--cobalt); font-style: normal; }
+        
+        .hero-lead { max-width: 490px; color: #5f615f; font-size: 16px; line-height: 1.62; }
+        .hero-actions { display: flex; align-items: center; gap: 20px; margin-top: 35px; }
+        .hero-note { color: var(--muted); display: inline-flex; align-items: center; gap: 7px; letter-spacing: .03em; text-transform: none; }
+        
+        .hero-facts { display: flex; flex-wrap: wrap; gap: 14px 22px; margin-top: 65px; color: #5e605e; font-size: 11px; }
+        .hero-facts div { display: flex; align-items: center; gap: 7px; }
+        .fact-mark { width: 17px; height: 17px; display: grid; place-items: center; color: var(--cobalt); border: 1px solid #b7c2ec; border-radius: 50%; }
+        
+        .hero-signature { display: flex; align-items: center; gap: 11px; margin-top: 44px; color: var(--muted); font: 500 10px "IBM Plex Mono", monospace; letter-spacing: .1em; }
+        .signature-rule { width: 45px; height: 1px; background: var(--line); }
+        
+        .workspace-card { background: var(--white); padding: 28px; border: 1px solid #dedbd3; box-shadow: 15px 18px 0 rgba(21,23,25,.045); position: relative; }
+        .workspace-card::before { content: ""; position: absolute; top: -8px; right: -8px; width: 48px; height: 48px; border-top: 1px solid var(--cobalt); border-right: 1px solid var(--cobalt); }
+        
+        .workspace-topline { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+        .section-kicker { display: block; color: var(--cobalt); margin-bottom: 9px; }
+        .workspace-topline h2 { margin: 0; font: 600 26px/1 "Space Grotesk", sans-serif; letter-spacing: -.045em; }
+        .workspace-index { color: var(--muted); }
+        
+        .mode-tabs { display: flex; gap: 5px; margin: 22px 0 28px; border-bottom: 1px solid var(--line); }
+        .mode-tab { display: inline-flex; align-items: center; gap: 8px; padding: 0 12px 13px; margin-bottom: -1px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; }
+        .mode-tab.active { color: var(--ink); border-color: var(--cobalt); }
+        
+        .input-stack { margin-bottom: 22px; }
+        .input-stack label, .input-label { display: block; margin-bottom: 9px; color: var(--ink); font-size: 12px; font-weight: 700; }
+        
+        .url-input-wrap { display: flex; align-items: center; border: 1px solid #bbb9b1; background: #fbfaf6; transition: border .2s, box-shadow .2s; }
+        .url-input-wrap:focus-within { border-color: var(--cobalt); box-shadow: 0 0 0 3px rgba(36,87,230,.1); }
+        .input-icon { margin-left: 13px; color: var(--cobalt); }
+        .url-input-wrap input { width: 100%; min-width: 0; padding: 16px 10px; border: 0; outline: 0; color: var(--ink); background: transparent; font: 14px "IBM Plex Mono", monospace; }
+        .url-input-wrap input::placeholder { color: #a8a7a0; }
+        
+        .copy-button { margin-right: 8px; border: 0; background: transparent; color: var(--muted); padding: 6px; cursor: pointer; }
+        .copy-button:hover { color: var(--cobalt); }
+        .field-help { margin: 9px 0 0; color: var(--muted); font-size: 11px; }
+        
+        .drop-zone { display: flex; align-items: center; gap: 12px; min-height: 94px; padding: 15px; border: 1px dashed #b8b6ae; background: #fbfaf6; transition: border .2s, background .2s; }
+        .drop-zone.dragging { border-color: var(--cobalt); background: var(--cobalt-soft); }
+        .drop-icon { width: 40px; height: 40px; flex: 0 0 auto; display: grid; place-items: center; color: var(--cobalt); background: var(--cobalt-soft); }
+        .drop-zone strong, .drop-zone span { display: block; }
+        .drop-zone strong { max-width: 168px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+        .drop-zone span { margin-top: 4px; color: var(--muted); font-size: 11px; }
+        .choose-file { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; border: 0; border-bottom: 1px solid var(--cobalt); padding: 4px 0; background: transparent; color: var(--cobalt); font-size: 11px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+        
+        .analyze-button { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 5px 5px 5px 17px; border: 1px solid var(--ink); background: var(--ink); color: white; font-size: 13px; font-weight: 700; transition: transform .16s var(--ease-out), background .2s; cursor: pointer; }
+        .analyze-button:hover { background: var(--cobalt); border-color: var(--cobalt); }
+        .analyze-icon { display: grid; place-items: center; width: 34px; height: 34px; background: rgba(255,255,255,.12); }
+        
+        .feedback-box { display: flex; gap: 11px; margin-top: 16px; padding: 13px; border: 1px solid #cfd5ef; background: #f4f6ff; color: #263970; }
+        .feedback-box.error { border-color: #ecc5bf; background: #fff3f0; color: #813d35; }
+        .feedback-box.success { border-color: #c5dfc8; background: #f1faf1; color: #2c6735; }
+        .feedback-icon { flex: 0 0 auto; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: currentColor; color: white; }
+        .feedback-box strong { font-size: 12px; display: block; }
+        .feedback-box p { margin: 4px 0 0; font-size: 11px; line-height: 1.45; }
+        
+        .privacy-note { display: flex; align-items: center; gap: 9px; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.4; }
+        .privacy-note svg { flex: 0 0 auto; color: var(--cobalt); }
+        .privacy-note strong { color: var(--ink); }
+        
+        .site-footer { display: flex; align-items: center; justify-content: space-between; min-height: 75px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; margin-top: 40px; }
+        .footer-brand { display: flex; align-items: center; gap: 8px; }
+        .footer-brand span { color: var(--ink); font-size: 11px; }
+        .footer-code { color: var(--cobalt); }
+        
+        .signal-mark { width: 31px; height: 31px; fill: none; stroke: var(--cobalt); stroke-width: 2.15; stroke-linecap: square; stroke-linejoin: miter; }
+        .footer-brand .signal-mark { width: 23px; height: 23px; }
+        
+        @media (max-width: 900px) { 
+            .hero-section { grid-template-columns: 1fr; gap: 54px; padding-top: 65px; }
+            .hero-copy { padding-left: 30px; }
+        }
+        
+        @media (max-width: 640px) { 
+            .container { width: min(100% - 32px, 1180px); }
+            .site-header { min-height: 70px; }
+            .header-actions .text-button, .live-status { display: none; }
+            .header-cta { padding: 11px 12px; font-size: 11px; }
+            .hero-section { padding: 47px 0 65px; }
+            .hero-copy { padding-left: 24px; }
+            .hero-copy::before { top: 23px; height: 400px; }
+            .hero-section::after { bottom: 23px; width: 90px; }
+            .hero-actions { align-items: flex-start; flex-direction: column; gap: 14px; }
+            .hero-facts { display: grid; margin-top: 44px; }
+            .workspace-card { padding: 20px; }
+            .drop-zone { flex-wrap: wrap; }
+            .choose-file { margin-left: 52px; }
+            .site-footer { align-items: flex-start; flex-direction: column; justify-content: center; gap: 10px; padding: 24px 0; }
+            .footer-code { display: none; } 
+        }
+    </style>
+</head>
+
+<body>
+    <div class="site-shell">
+        <header class="site-header">
+            <div class="container">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <a href="#" class="brand">
+                        <svg class="signal-mark brand-mark" viewBox="0 0 24 24">
+                            <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"></path>
+                            <polyline points="16 6 12 2 8 6"></polyline>
+                            <line x1="12" y1="2" x2="12" y2="15"></line>
+                        </svg>
+                        <span class="brand-wordmark">PHISHGUARD</span>
+                    </a>
+                    
+                    <div class="header-actions">
+                        <div class="live-status">
+                            <div class="status-dot"></div>
+                            API ACTIVE
+                        </div>
+                        <a href="https://github.com/DerdliAsiq/PhishingHUB" target="_blank" class="text-button">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                            </svg>
+                            View Repository
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="container">
+            <section class="hero-section">
+                <div class="hero-copy">
+                    <div class="eyebrow">
+                        <div class="eyebrow-line"></div>
+                        PASSIVE INTELLIGENCE
+                    </div>
+                    
+                    <h1>Detect malicious intent <em>before execution.</em></h1>
+                    
+                    <p class="hero-lead">
+                        PhishGuard acts as a secure airgap for suspicious links and files. 
+                        Cross-referenced against global threat feeds, analyzed in isolation, 
+                        designed to keep credentials safe from adversaries.
+                    </p>
+                    
+                    <div class="hero-facts">
+                        <div><div class="fact-mark">✓</div> No local execution</div>
+                        <div><div class="fact-mark">✓</div> 70+ AV Engines (VirusTotal)</div>
+                        <div><div class="fact-mark">✓</div> Zero-day heuristics</div>
+                    </div>
+                    
+                    <div class="hero-signature">
+                        SYSTEM ARCHITECTURE: VT API INTEGRATION
+                        <div class="signature-rule"></div>
+                    </div>
+                </div>
+
+                <div class="workspace-area">
+                    <div class="workspace-card">
+                        <div class="workspace-topline">
+                            <div>
+                                <span class="section-kicker">ANALYSIS MODULE</span>
+                                <h2>Threat Scanner</h2>
+                            </div>
+                            <div class="workspace-index">MOD-01</div>
+                        </div>
+                        
+                        <div class="mode-tabs">
+                            <button class="mode-tab active">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                </svg>
+                                URL Scan
+                            </button>
+                            <button class="mode-tab">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                                    <polyline points="13 2 13 9 20 9"></polyline>
+                                </svg>
+                                File Hash
+                            </button>
+                        </div>
+                        
+                        <div class="input-stack">
+                            <label for="target-url">Target Address</label>
+                            <div class="url-input-wrap">
+                                <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                                </svg>
+                                <input type="text" id="target-url" placeholder="https://suspicious-link.com/invoice.pdf" autocomplete="off" />
+                            </div>
+                            <p class="field-help">URLs are submitted securely via our backend relay.</p>
+                        </div>
+                        
+                        <button class="analyze-button" id="scan-btn">
+                            INITIATE SCAN
+                            <div class="analyze-icon">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    <polyline points="12 5 19 12 12 19"></polyline>
+                                </svg>
+                            </div>
+                        </button>
+                        
+                        <div id="result-box" style="display: none;"></div>
+                        
+                        <div class="privacy-note">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            <span>Data is submitted securely to <strong>VirusTotal API</strong> for analysis.</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="site-footer container">
+            <div class="footer-brand">
+                <svg class="signal-mark" viewBox="0 0 24 24">
+                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"></path>
+                    <polyline points="16 6 12 2 8 6"></polyline>
+                    <line x1="12" y1="2" x2="12" y2="15"></line>
+                </svg>
+                <span>PHISHGUARD</span>
+            </div>
+            <div>Passive Security Workspace</div>
+            <div class="footer-code">BUILD: PG-24.57</div>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const scanBtn = document.getElementById('scan-btn');
+            const urlInput = document.getElementById('target-url');
+            const resultBox = document.getElementById('result-box');
+            
+            // Connect to the actual Render API we built
+            const API_ENDPOINT = "https://phishinghub.onrender.com/analyze/url";
+
+            scanBtn.addEventListener('click', async () => {
+                const url = urlInput.value.trim();
+                
+                if (!url) {
+                    showFeedback('error', 'Target Required', 'Please enter a URL to scan.');
+                    return;
+                }
+                
+                // Show loading state
+                scanBtn.disabled = true;
+                scanBtn.innerHTML = `
+                    ANALYZING...
+                    <div class="analyze-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin">
+                            <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+                        </svg>
+                    </div>
+                `;
+                
+                showFeedback('info', 'Connecting to Intelligence Hub', 'Submitting URL for deep analysis...');
+                
+                try {
+                    const response = await fetch(API_ENDPOINT, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: url })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        showFeedback('success', 'Scan Initiated Successfully', `
+                            <strong>Target:</strong> ${data.url_scanned}<br>
+                            <strong>Status:</strong> ${data.message}<br>
+                            <strong>Action:</strong> ${data.action}<br>
+                            <strong>VT Ref:</strong> <small style="font-family: monospace">${data.vt_analysis_id}</small>
+                        `);
+                    } else {
+                        showFeedback('error', 'Analysis Failed', data.detail || 'The API rejected the request.');
+                    }
+                } catch (error) {
+                    showFeedback('error', 'Connection Error', 'Could not connect to the PhishingHub API. Ensure the backend on Render is running.');
+                } finally {
+                    scanBtn.disabled = false;
+                    scanBtn.innerHTML = `
+                        INITIATE SCAN
+                        <div class="analyze-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                <polyline points="12 5 19 12 12 19"></polyline>
+                            </svg>
+                        </div>
+                    `;
+                }
+            });
+            
+            function showFeedback(type, title, message) {
+                resultBox.style.display = 'flex';
+                resultBox.className = `feedback-box ${type}`;
+                
+                let icon = '';
+                if (type === 'error') {
+                    icon = '<path d="M18 6L6 18M6 6l12 12"></path>';
+                } else if (type === 'success') {
+                    icon = '<polyline points="20 6 9 17 4 12"></polyline>';
+                } else {
+                    icon = '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>';
+                }
+                
+                resultBox.innerHTML = `
+                    <div class="feedback-icon">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icon}</svg>
+                    </div>
+                    <div>
+                        <strong>${title}</strong>
+                        <p>${message}</p>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

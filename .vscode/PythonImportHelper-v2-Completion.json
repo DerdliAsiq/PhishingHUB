@@ -1,0 +1,97 @@
+[
+    {
+        "label": "FileResponse",
+        "importPath": "fastapi.responses",
+        "description": "fastapi.responses",
+        "isExtraImport": true,
+        "detail": "fastapi.responses",
+        "documentation": {}
+    },
+    {
+        "label": "FastAPI",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "requests",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "requests",
+        "description": "requests",
+        "detail": "requests",
+        "documentation": {}
+    },
+    {
+        "label": "os",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
+        "documentation": {}
+    },
+    {
+        "label": "AnalyzeRequest",
+        "kind": 6,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "class AnalyzeRequest(BaseModel):\n    url: str\n@app.get(\"/\")\ndef read_root():\n    return FileResponse(\"index.html\")\n@app.post(\"/analyze/url\")\ndef analyze_phishing_url(request: AnalyzeRequest):\n    \"\"\"\n    Gelen URL'i VirusTotal API'sine gönderir ve risk analizi yapar.\n    \"\"\"",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "read_root",
+        "kind": 2,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "def read_root():\n    return FileResponse(\"index.html\")\n@app.post(\"/analyze/url\")\ndef analyze_phishing_url(request: AnalyzeRequest):\n    \"\"\"\n    Gelen URL'i VirusTotal API'sine gönderir ve risk analizi yapar.\n    \"\"\"\n    vt_url = \"https://www.virustotal.com/api/v3/urls\"\n    headers = {\n        \"accept\": \"application/json\",",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "analyze_phishing_url",
+        "kind": 2,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "def analyze_phishing_url(request: AnalyzeRequest):\n    \"\"\"\n    Gelen URL'i VirusTotal API'sine gönderir ve risk analizi yapar.\n    \"\"\"\n    vt_url = \"https://www.virustotal.com/api/v3/urls\"\n    headers = {\n        \"accept\": \"application/json\",\n        \"x-apikey\": VT_API_KEY,\n        \"content-type\": \"application/x-www-form-urlencoded\"\n    }",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "app",
+        "kind": 5,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "app = FastAPI(title=\"Phishing Analyzer Hub\")\n# API Anahtarını çevre değişkenlerinden (Environment Variables) alıyoruz\nVT_API_KEY = os.environ.get(\"VT_API_KEY\", \"bf00aab82a6caad5ca0d913ad3567663d8d957d1f4e9fb8e76601b59cfff843e\")\nclass AnalyzeRequest(BaseModel):\n    url: str\n@app.get(\"/\")\ndef read_root():\n    return FileResponse(\"index.html\")\n@app.post(\"/analyze/url\")\ndef analyze_phishing_url(request: AnalyzeRequest):",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "VT_API_KEY",
+        "kind": 5,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "VT_API_KEY = os.environ.get(\"VT_API_KEY\", \"bf00aab82a6caad5ca0d913ad3567663d8d957d1f4e9fb8e76601b59cfff843e\")\nclass AnalyzeRequest(BaseModel):\n    url: str\n@app.get(\"/\")\ndef read_root():\n    return FileResponse(\"index.html\")\n@app.post(\"/analyze/url\")\ndef analyze_phishing_url(request: AnalyzeRequest):\n    \"\"\"\n    Gelen URL'i VirusTotal API'sine gönderir ve risk analizi yapar.",
+        "detail": "main",
+        "documentation": {}
+    }
+]
