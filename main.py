@@ -4,11 +4,14 @@ from pydantic import BaseModel
 import requests
 import os
 import hashlib
+import socket
+from urllib.parse import urlparse
 
 app = FastAPI(title="Phishing Analyzer Hub")
 
-# Zayıf yapılandırma laboratuvar senaryosu
 VT_API_KEY = os.environ.get("VT_API_KEY", "bf00aab82a6caad5ca0d913ad3567663d8d957d1f4e9fb8e76601b59cfff843e")
+ABUSEIPDB_API_KEY = os.environ.get("ABUSEIPDB_API_KEY", "e78fe34f8f81987ad0fdf42b73a8d51e1ebb00b51236a8f837447c794a6f2f6e0a456b97dc0ce3ef")
+PULSEDIVE_API_KEY = os.environ.get("PULSEDIVE_API_KEY", "e78fe34f8f81987ad0fdf42b73a8d51e1ebb00b51236a8f837447c794a6f2f6e0a456b97dc0ce3ef")
 
 class AnalyzeRequest(BaseModel):
     url: str
@@ -21,6 +24,7 @@ def read_root():
 def analyze_phishing_url(request: AnalyzeRequest):
     target_url = request.url
     
+    # 1. VirusTotal URL Scan
     vt_endpoint = "https://www.virustotal.com/api/v3/urls"
     vt_headers = {
         "accept": "application/json",
@@ -37,6 +41,7 @@ def analyze_phishing_url(request: AnalyzeRequest):
     except Exception:
         pass
 
+    # 2. URLhaus Scan
     urlhaus_endpoint = "https://urlhaus-api.abuse.ch/v1/url/"
     urlhaus_status = "Bilinmiyor"
     try:
@@ -44,35 +49,79 @@ def analyze_phishing_url(request: AnalyzeRequest):
         if uh_resp.status_code == 200:
             uh_data = uh_resp.json()
             if uh_data.get('query_status') == 'ok':
-                urlhaus_status = f"ZARARLI TESPİT EDİLDİ! (Durum: {uh_data.get('url_status')})"
+                urlhaus_status = f"ZARARLI ({uh_data.get('url_status')})"
             else:
-                urlhaus_status = "Temiz (URLhaus veritabanında bulunamadı)"
+                urlhaus_status = "Temiz"
     except Exception:
         urlhaus_status = "Sorgu Hatası"
+
+    # Extract domain and IP for AbuseIPDB & Pulsedive
+    parsed_url = urlparse(target_url)
+    domain = parsed_url.netloc or parsed_url.path.split('/')[0]
+    if ":" in domain:
+        domain = domain.split(":")[0]
+        
+    ip_address = None
+    try:
+        ip_address = socket.gethostbyname(domain)
+    except Exception:
+        pass
+
+    # 3. AbuseIPDB Scan
+    abuse_status = "IP Çözümlenemedi"
+    if ip_address:
+        try:
+            abuse_endpoint = "https://api.abuseipdb.com/api/v2/check"
+            abuse_headers = {
+                "Accept": "application/json",
+                "Key": ABUSEIPDB_API_KEY
+            }
+            abuse_params = {"ipAddress": ip_address, "maxAgeInDays": "90"}
+            abuse_resp = requests.get(abuse_endpoint, headers=abuse_headers, params=abuse_params)
+            if abuse_resp.status_code == 200:
+                abuse_data = abuse_resp.json().get("data", {})
+                score = abuse_data.get("abuseConfidenceScore", 0)
+                abuse_status = f"Güvenilmezlik Skoru: %{score}"
+            else:
+                abuse_status = "API Yanıt Vermedi"
+        except Exception:
+            abuse_status = "Sorgu Hatası"
+
+    # 4. Pulsedive Scan
+    pulsedive_status = "Bilinmiyor"
+    try:
+        pulsedive_endpoint = "https://pulsedive.com/api/indicator.php"
+        pulsedive_params = {"indicator": domain, "key": PULSEDIVE_API_KEY}
+        pd_resp = requests.get(pulsedive_endpoint, params=pulsedive_params)
+        if pd_resp.status_code == 200:
+            pd_data = pd_resp.json()
+            risk = pd_data.get("risk", "unknown")
+            pulsedive_status = f"Risk Seviyesi: {risk.upper()}"
+        else:
+            pulsedive_status = "Veri Bulunamadı"
+    except Exception:
+        pulsedive_status = "Sorgu Hatası"
+
+    action_summary = f"[URLhaus: {urlhaus_status}] | [AbuseIPDB ({ip_address or 'IP Yok'}): {abuse_status}] | [Pulsedive: {pulsedive_status}]"
 
     return {
         "status": "success",
         "message": "Çoklu İstihbarat Taraması Tamamlandı.",
         "url_scanned": target_url,
         "vt_analysis_id": vt_result,
-        "action": f"[URLhaus] -> {urlhaus_status}" 
+        "action": action_summary 
     }
 
 @app.post("/analyze/file")
 async def analyze_uploaded_file(file: UploadFile = File(...)):
-    """
-    Zafiyet Koruması: Dosya bütün olarak RAM'e alınmaz.
-    64KB'lık parçalar (chunks) halinde stream edilerek bellek taşması (OOM) engellenir.
-    """
     sha256_hash = hashlib.sha256()
-    
     try:
         while chunk := await file.read(65536):
             sha256_hash.update(chunk)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Dosya okuma hatası (I/O): {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Dosya okuma hatası: {str(e)}")
     finally:
-        await file.close() # Fiziksel/Spooled bellek kalıntılarını temizle
+        await file.close()
 
     file_hash = sha256_hash.hexdigest()
     
@@ -97,7 +146,7 @@ async def analyze_uploaded_file(file: UploadFile = File(...)):
         elif vt_resp.status_code == 404:
             return {
                 "status": "success",
-                "message": "Hash veritabanında bulunamadı (Temiz veya Zero-day).",
+                "message": "Hash veritabanında bulunamadı.",
                 "file_hash": file_hash,
                 "action": "VT üzerinde tehdit kaydı algılanmadı."
             }
