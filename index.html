@@ -1,105 +1,3 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phishing Hub | İstihbarat Paneli</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e2f; color: #fff; padding: 40px 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 600px; background: #2a2a40; padding: 30px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); }
-        h2 { margin-top: 0; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }
-        input[type="text"] { width: 100%; padding: 12px; margin: 15px 0; border: none; border-radius: 6px; box-sizing: border-box; background: #1e1e2f; color: #fff; font-size: 16px; outline: none; }
-        input[type="text"]:focus { border: 1px solid #4CAF50; }
-        button { width: 100%; padding: 12px; background-color: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; }
-        button:hover { background-color: #45a049; }
-        #result { margin-top: 20px; padding: 15px; border-radius: 6px; display: none; word-wrap: break-word; line-height: 1.5; }
-        .loading { background-color: #d35400; }
-        .success { background-color: #27ae60; }
-        .danger { background-color: #c0392b; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>🚨 Phishing Analiz Merkezi</h2>
-        <p>Şüpheli bir bağlantıya tıkladıktan sonra, URL'yi analiz etmek için aşağıya girin:</p>
-        <input type="text" id="urlInput" placeholder="https://süpheli-link.com/aciliyet_fatura.exe">
-        <button onclick="analyzeUrl()">Analiz Et</button>
-        
-        <div id="result"></div>
-    </div>
-
-    <script>
-        // ÖNEMLİ: Render.com'a deploy ettiğinde burayı kendi public URL'in ile değiştir
-        // Örnek: "https://senin-projen.onrender.com/analyze/url"
-        const API_ENDPOINT = "http://localhost:8000/analyze/url"; 
-
-        async function analyzeUrl() {
-            const url = document.getElementById('urlInput').value;
-            const resultDiv = document.getElementById('result');
-            
-            if(!url) {
-                alert("Hedef yok! Lütfen bir URL girin.");
-                return;
-            }
-
-            resultDiv.style.display = "block";
-            resultDiv.className = "loading";
-            resultDiv.innerHTML = "⏳ İstihbarat API'leri sorgulanıyor, bekleyin...";
-
-            try {
-                const response = await fetch(API_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: url })
-                });
-
-                const data = await response.json();
-
-                if(response.ok) {
-                    resultDiv.className = "success";
-                    resultDiv.innerHTML = `
-                        <strong>Durum:</strong> ${data.message} <br>
-                        <strong>Taranan URL:</strong> ${data.url_scanned} <br>
-                        <strong>Aksiyon:</strong> ${data.action} <br>
-                        <strong>VT ID:</strong> <small>${data.vt_analysis_id}</small>
-                    `;
-                } else {
-                    resultDiv.className = "danger";
-                    resultDiv.innerHTML = `🔥 Kritik Hata: ${data.detail}`;
-                }
-            } catch (error) {
-                resultDiv.className = "danger";
-                resultDiv.innerHTML = "❌ Sunucuya ulaşılamadı. Uvicorn veya Render ayakta mı?";
-            }
-        }
-    </script>
-</body>
-</html>
-
-<script> etiketleri arasında bulunan API_ENDPOINT değişkenini bul.
-
-    Eski localhost değerini silip tam olarak şu şekilde güncelle:
-    const API_ENDPOINT = "[https://phishinghub.onrender.com/analyze/url](https://phishinghub.onrender.com/analyze/url)";
-
-    Dosyayı kaydet.
-
-Canlı Test İşleyişi
-index.html dosyasını tarayıcında açtıktan sonra girdiğin şüpheli bir link, doğrudan Render üzerindeki backend'ine POST edilecek. Sunucun koda gömdüğümüz API anahtarını kullanarak VirusTotal'i sorgulayacak ve dönen risk durumunu doğrudan ekrana yansıtacaktır. (Loglarda gördüğün 405 Method Not Allowed uyarısı, Render'ın uygulamanın ayakta olup olmadığını anlamak için attığı otomatik HEAD isteklerinden kaynaklanır ve çalışmaya hiçbir engeli yoktur.)
-API'ye yeni analiz modülleri ekleyelim mi?
-
-bu tasarimda yen iden yaz
-
-İstediğin "Signal Room" (PhishGuard) tasarımını, Render üzerindeki canlı [https://phishinghub.onrender.com](https://phishinghub.onrender.com) API'sine bağlı olarak tek ve çalışabilir bir HTML dosyası haline getirdim. Tasarımdaki Cobalt aksanları, fontları (Space Grotesk, IBM Plex Mono, vb.) ve tüm formasyonları statik bir CSS/HTML yapısında harmanladım.
-
-Your HTML file is ready:
-HTML simgesi
-index
- HTML 
-
-Bu dosyayı indirip doğrudan tarayıcında açabilirsin. Arayüze şüpheli bir link yapıştırıp INITIATE SCAN butonuna bastığında, doğrudan arka plandaki (daha önce yazdığımız) Python koduna bağlanacak ve VT entegrasyonuyla sonucu ekrana yansıtacaktır. (Holberton'un NOPASSWD sevdalısı TassakliSabri kurbanımız için oldukça şık bir pasif güvenlik duvarı oldu!)
-
-
-Gemini bir yapay zeka modeli olduğu için hata yapabilir.
 
 <!DOCTYPE html>
 <html lang="tr">
@@ -418,8 +316,8 @@ Gemini bir yapay zeka modeli olduğu için hata yapabilir.
             const urlInput = document.getElementById('target-url');
             const resultBox = document.getElementById('result-box');
             
-            // Connect to the actual Render API we built
-            const API_ENDPOINT = "https://phishinghub.onrender.com/analyze/url";
+            // Doğrudan aynı domain üzerinden istek atılacağı için sadece path kullanıyoruz (CORS hatasını çözer)
+            const API_ENDPOINT = "/analyze/url";
 
             scanBtn.addEventListener('click', async () => {
                 const url = urlInput.value.trim();
