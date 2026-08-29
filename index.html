@@ -1,11 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <title>PhishGuard — Passive Security Workspace</title>    
-    <meta name="description" content="PhishGuard passive URL and QR security analysis workspace." />
     
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     
@@ -62,13 +60,6 @@
         .text-button, .inline-link { border: 0; background: transparent; color: var(--ink); display: inline-flex; align-items: center; gap: 7px; padding: 7px 0; font-size: 13px; font-weight: 600; text-decoration: none; }
         .text-button:hover, .inline-link:hover { color: var(--cobalt); }
         
-        .header-cta, .primary-button { 
-            border: 0; color: white; background: var(--ink); display: inline-flex; align-items: center; gap: 10px; 
-            font-size: 13px; font-weight: 700; padding: 13px 17px; transition: transform .16s var(--ease-out), background .2s; text-decoration: none;
-        }
-        .header-cta:hover, .primary-button:hover { background: var(--cobalt); transform: translateY(-2px); }
-        .header-cta:active, .primary-button:active, .analyze-button:active { transform: scale(.97); }
-        
         .hero-section { display: grid; grid-template-columns: minmax(0, 1.03fr) minmax(420px, .97fr); gap: 84px; padding: 90px 0 106px; position: relative; }
         .hero-section::after { content: ""; position: absolute; width: 210px; height: 1px; right: 0; bottom: 40px; background: var(--cobalt); opacity: .45; }
         
@@ -80,11 +71,9 @@
         
         h1, h2, h3, p { margin-top: 0; }
         h1 { max-width: 580px; margin-bottom: 25px; font: 600 clamp(3.4rem, 5.2vw, 5.2rem)/.97 "Space Grotesk", sans-serif; letter-spacing: -.07em; }
-        h1 em, .method-intro h2 em { color: var(--cobalt); font-style: normal; }
+        h1 em { color: var(--cobalt); font-style: normal; }
         
         .hero-lead { max-width: 490px; color: #5f615f; font-size: 16px; line-height: 1.62; }
-        .hero-actions { display: flex; align-items: center; gap: 20px; margin-top: 35px; }
-        .hero-note { color: var(--muted); display: inline-flex; align-items: center; gap: 7px; letter-spacing: .03em; text-transform: none; }
         
         .hero-facts { display: flex; flex-wrap: wrap; gap: 14px 22px; margin-top: 65px; color: #5e605e; font-size: 11px; }
         .hero-facts div { display: flex; align-items: center; gap: 7px; }
@@ -114,92 +103,52 @@
         .url-input-wrap input { width: 100%; min-width: 0; padding: 16px 10px; border: 0; outline: 0; color: var(--ink); background: transparent; font: 14px "IBM Plex Mono", monospace; }
         .url-input-wrap input::placeholder { color: #a8a7a0; }
         
-        .copy-button { margin-right: 8px; border: 0; background: transparent; color: var(--muted); padding: 6px; cursor: pointer; }
-        .copy-button:hover { color: var(--cobalt); }
         .field-help { margin: 9px 0 0; color: var(--muted); font-size: 11px; }
         
-        .drop-zone { display: flex; align-items: center; gap: 12px; min-height: 94px; padding: 15px; border: 1px dashed #b8b6ae; background: #fbfaf6; transition: border .2s, background .2s; }
+        .drop-zone { display: flex; align-items: center; gap: 12px; min-height: 94px; padding: 15px; border: 1px dashed #b8b6ae; background: #fbfaf6; transition: border .2s, background .2s; cursor: pointer; }
         .drop-zone.dragging { border-color: var(--cobalt); background: var(--cobalt-soft); }
         .drop-icon { width: 40px; height: 40px; flex: 0 0 auto; display: grid; place-items: center; color: var(--cobalt); background: var(--cobalt-soft); }
-        .drop-zone strong, .drop-zone span { display: block; }
-        .drop-zone strong { max-width: 168px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+        .drop-zone strong, .drop-zone span { display: block; pointer-events: none; }
+        .drop-zone strong { max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
         .drop-zone span { margin-top: 4px; color: var(--muted); font-size: 11px; }
-        .choose-file { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; border: 0; border-bottom: 1px solid var(--cobalt); padding: 4px 0; background: transparent; color: var(--cobalt); font-size: 11px; font-weight: 700; white-space: nowrap; cursor: pointer; }
         
         .analyze-button { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 5px 5px 5px 17px; border: 1px solid var(--ink); background: var(--ink); color: white; font-size: 13px; font-weight: 700; transition: transform .16s var(--ease-out), background .2s; cursor: pointer; }
         .analyze-button:hover { background: var(--cobalt); border-color: var(--cobalt); }
         .analyze-icon { display: grid; place-items: center; width: 34px; height: 34px; background: rgba(255,255,255,.12); }
         
-        .feedback-box { display: flex; gap: 11px; margin-top: 16px; padding: 13px; border: 1px solid #cfd5ef; background: #f4f6ff; color: #263970; }
+        .feedback-box { display: flex; gap: 11px; margin-top: 16px; padding: 13px; border: 1px solid #cfd5ef; background: #f4f6ff; color: #263970; flex-direction: column; }
         .feedback-box.error { border-color: #ecc5bf; background: #fff3f0; color: #813d35; }
         .feedback-box.success { border-color: #c5dfc8; background: #f1faf1; color: #2c6735; }
+        .feedback-header { display: flex; gap: 11px; align-items: center; }
         .feedback-icon { flex: 0 0 auto; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: currentColor; color: white; }
         .feedback-box strong { font-size: 12px; display: block; }
-        .feedback-box p { margin: 4px 0 0; font-size: 11px; line-height: 1.45; }
+        .feedback-content { margin-top: 8px; font-size: 11px; line-height: 1.5; padding-left: 33px; }
         
         .privacy-note { display: flex; align-items: center; gap: 9px; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.4; }
         .privacy-note svg { flex: 0 0 auto; color: var(--cobalt); }
-        .privacy-note strong { color: var(--ink); }
         
         .site-footer { display: flex; align-items: center; justify-content: space-between; min-height: 75px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; margin-top: 40px; }
         .footer-brand { display: flex; align-items: center; gap: 8px; }
-        .footer-brand span { color: var(--ink); font-size: 11px; }
-        .footer-code { color: var(--cobalt); }
-        
         .signal-mark { width: 31px; height: 31px; fill: none; stroke: var(--cobalt); stroke-width: 2.15; stroke-linecap: square; stroke-linejoin: miter; }
         .footer-brand .signal-mark { width: 23px; height: 23px; }
-        
-        @media (max-width: 900px) { 
-            .hero-section { grid-template-columns: 1fr; gap: 54px; padding-top: 65px; }
-            .hero-copy { padding-left: 30px; }
-        }
-        
-        @media (max-width: 640px) { 
-            .container { width: min(100% - 32px, 1180px); }
-            .site-header { min-height: 70px; }
-            .header-actions .text-button, .live-status { display: none; }
-            .header-cta { padding: 11px 12px; font-size: 11px; }
-            .hero-section { padding: 47px 0 65px; }
-            .hero-copy { padding-left: 24px; }
-            .hero-copy::before { top: 23px; height: 400px; }
-            .hero-section::after { bottom: 23px; width: 90px; }
-            .hero-actions { align-items: flex-start; flex-direction: column; gap: 14px; }
-            .hero-facts { display: grid; margin-top: 44px; }
-            .workspace-card { padding: 20px; }
-            .drop-zone { flex-wrap: wrap; }
-            .choose-file { margin-left: 52px; }
-            .site-footer { align-items: flex-start; flex-direction: column; justify-content: center; gap: 10px; padding: 24px 0; }
-            .footer-code { display: none; } 
-        }
     </style>
 </head>
 
 <body>
     <div class="site-shell">
         <header class="site-header">
-            <div class="container">
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <a href="#" class="brand">
-                        <svg class="signal-mark brand-mark" viewBox="0 0 24 24">
-                            <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"></path>
-                            <polyline points="16 6 12 2 8 6"></polyline>
-                            <line x1="12" y1="2" x2="12" y2="15"></line>
-                        </svg>
-                        <span class="brand-wordmark">PHISHGUARD</span>
-                    </a>
-                    
-                    <div class="header-actions">
-                        <div class="live-status">
-                            <div class="status-dot"></div>
-                            API ACTIVE
-                        </div>
-                        <a href="https://github.com/DerdliAsiq/PhishingHUB" target="_blank" class="text-button">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
-                            </svg>
-                            View Repository
-                        </a>
-                    </div>
+            <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+                <a href="#" class="brand">
+                    <svg class="signal-mark brand-mark" viewBox="0 0 24 24">
+                        <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"></path>
+                        <polyline points="16 6 12 2 8 6"></polyline>
+                        <line x1="12" y1="2" x2="12" y2="15"></line>
+                    </svg>
+                    <span class="brand-wordmark">PHISHGUARD</span>
+                </a>
+                <div class="header-actions">
+                    <div class="live-status"><div class="status-dot"></div> API ACTIVE</div>
+                    <a href="https://github.com/DerdliAsiq/PhishingHUB" target="_blank" class="text-button">View Repository</a>
                 </div>
             </div>
         </header>
@@ -207,69 +156,72 @@
         <main class="container">
             <section class="hero-section">
                 <div class="hero-copy">
-                    <div class="eyebrow">
-                        <div class="eyebrow-line"></div>
-                        PASSIVE INTELLIGENCE
-                    </div>
-                    
+                    <div class="eyebrow"><div class="eyebrow-line"></div> PASSIVE INTELLIGENCE</div>
                     <h1>Detect malicious intent <em>before execution.</em></h1>
-                    
-                    <p class="hero-lead">
-                        PhishGuard acts as a secure airgap for suspicious links and files. 
-                        Cross-referenced against global threat feeds, analyzed in isolation, 
-                        designed to keep credentials safe from adversaries.
-                    </p>
+                    <p class="hero-lead">PhishGuard acts as a secure airgap for suspicious links and files. Analyzed in isolation, designed to keep credentials safe.</p>
                     
                     <div class="hero-facts">
-                        <div><div class="fact-mark">✓</div> No local execution</div>
+                        <div><div class="fact-mark">✓</div> Memory-Safe File Parsing</div>
                         <div><div class="fact-mark">✓</div> 70+ AV Engines (VirusTotal)</div>
-                        <div><div class="fact-mark">✓</div> Zero-day heuristics</div>
+                        <div><div class="fact-mark">✓</div> Multi-Engine Architecture</div>
                     </div>
                     
-                    <div class="hero-signature">
-                        SYSTEM ARCHITECTURE: VT API INTEGRATION
-                        <div class="signature-rule"></div>
-                    </div>
+                    <div class="hero-signature">SYSTEM ARCHITECTURE: FASTAPI ASYNC STREAM <div class="signature-rule"></div></div>
                 </div>
 
                 <div class="workspace-area">
                     <div class="workspace-card">
                         <div class="workspace-topline">
-                            <div>
-                                <span class="section-kicker">ANALYSIS MODULE</span>
-                                <h2>Threat Scanner</h2>
-                            </div>
+                            <div><span class="section-kicker">ANALYSIS MODULE</span><h2>Threat Scanner</h2></div>
                             <div class="workspace-index">MOD-01</div>
                         </div>
                         
                         <div class="mode-tabs">
-                            <button class="mode-tab active">
+                            <button class="mode-tab active" id="tab-url">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                                     <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                                </svg>
-                                URL Scan
+                                </svg> URL Scan
                             </button>
-                            <button class="mode-tab">
+                            <button class="mode-tab" id="tab-file">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                                    <polyline points="13 2 13 9 20 9"></polyline>
-                                </svg>
-                                File Hash
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg> File Upload
                             </button>
                         </div>
                         
-                        <div class="input-stack">
-                            <label for="target-url">Target Address</label>
+                        <!-- URL INPUT UI -->
+                        <div class="input-stack" id="ui-url">
+                            <label class="input-label" for="target-url">Target Address</label>
                             <div class="url-input-wrap">
                                 <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                                    <circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line>
                                     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                                 </svg>
                                 <input type="text" id="target-url" placeholder="https://suspicious-link.com/invoice.pdf" autocomplete="off" />
                             </div>
                             <p class="field-help">URLs are submitted securely via our backend relay.</p>
+                        </div>
+
+                        <!-- FILE UPLOAD UI -->
+                        <div class="input-stack" id="ui-file" style="display: none;">
+                            <label class="input-label">Target File</label>
+                            <div class="drop-zone" id="file-drop-zone">
+                                <div class="drop-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                                        <polyline points="13 2 13 9 20 9"></polyline>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <strong id="file-name-display">Click to browse or drop file</strong>
+                                    <span id="file-size-display">Max memory-safe stream limit: 50MB</span>
+                                </div>
+                                <input type="file" id="file-input" style="display: none;">
+                            </div>
+                            <p class="field-help">Files are chunk-streamed to calculate SHA-256. No payload execution occurs.</p>
                         </div>
                         
                         <button class="analyze-button" id="scan-btn">
@@ -286,121 +238,125 @@
                         
                         <div class="privacy-note">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                             </svg>
-                            <span>Data is submitted securely to <strong>VirusTotal API</strong> for analysis.</span>
+                            <span>Traffic is dynamically routed through Threat Intelligence APIs.</span>
                         </div>
                     </div>
                 </div>
             </section>
         </main>
-
-        <footer class="site-footer container">
-            <div class="footer-brand">
-                <svg class="signal-mark" viewBox="0 0 24 24">
-                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"></path>
-                    <polyline points="16 6 12 2 8 6"></polyline>
-                    <line x1="12" y1="2" x2="12" y2="15"></line>
-                </svg>
-                <span>PHISHGUARD</span>
-            </div>
-            <div>Passive Security Workspace</div>
-            <div class="footer-code">BUILD: PG-24.57</div>
-        </footer>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            let currentMode = 'url';
+            let selectedFile = null;
+
+            const tabUrl = document.getElementById('tab-url');
+            const tabFile = document.getElementById('tab-file');
+            const uiUrl = document.getElementById('ui-url');
+            const uiFile = document.getElementById('ui-file');
+            
+            const dropZone = document.getElementById('file-drop-zone');
+            const fileInput = document.getElementById('file-input');
+            const fileNameDisplay = document.getElementById('file-name-display');
+            const fileSizeDisplay = document.getElementById('file-size-display');
+            
             const scanBtn = document.getElementById('scan-btn');
             const urlInput = document.getElementById('target-url');
             const resultBox = document.getElementById('result-box');
-            const modeTabs = document.querySelectorAll('.mode-tab');
-            
-            let currentMode = 'url'; // Başlangıç modu
 
-            // Sekme değiştirme mantığı
-            modeTabs.forEach((tab, index) => {
-                tab.addEventListener('click', () => {
-                    modeTabs.forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    resultBox.style.display = 'none';
-
-                    if (index === 0) {
-                        currentMode = 'url';
-                        urlInput.placeholder = "https://suspicious-link.com/invoice.pdf";
-                        document.querySelector('label[for="target-url"]').innerText = "Target Address";
-                    } else {
-                        currentMode = 'hash';
-                        urlInput.placeholder = "44d88612fea8a8f36de82e1278abb02f (MD5 / SHA256)";
-                        document.querySelector('label[for="target-url"]').innerText = "File Hash (MD5 / SHA256)";
-                    }
-                });
+            // --- Tab Switching Logic ---
+            tabUrl.addEventListener('click', () => {
+                currentMode = 'url';
+                tabUrl.classList.add('active');
+                tabFile.classList.remove('active');
+                uiUrl.style.display = 'block';
+                uiFile.style.display = 'none';
+                resultBox.style.display = 'none';
             });
 
+            tabFile.addEventListener('click', () => {
+                currentMode = 'file';
+                tabFile.classList.add('active');
+                tabUrl.classList.remove('active');
+                uiFile.style.display = 'block';
+                uiUrl.style.display = 'none';
+                resultBox.style.display = 'none';
+            });
+
+            // --- File Selection Logic ---
+            dropZone.addEventListener('click', () => fileInput.click());
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    selectedFile = e.target.files[0];
+                    fileNameDisplay.textContent = selectedFile.name;
+                    fileSizeDisplay.textContent = (selectedFile.size / (1024 * 1024)).toFixed(2) + ' MB';
+                }
+            });
+
+            // --- Submission Logic ---
             scanBtn.addEventListener('click', async () => {
-                const val = urlInput.value.trim();
-                
-                if (!val) {
-                    showFeedback('error', 'Target Required', 'Please enter a URL or File Hash to scan.');
+                resultBox.style.display = 'none';
+
+                if (currentMode === 'url' && !urlInput.value.trim()) {
+                    showFeedback('error', 'Validation Failed', 'Please provide a valid target URL.');
+                    return;
+                }
+                if (currentMode === 'file' && !selectedFile) {
+                    showFeedback('error', 'Validation Failed', 'Please select a file to stream.');
                     return;
                 }
                 
                 scanBtn.disabled = true;
-                scanBtn.innerHTML = `
-                    ANALYZING...
-                    <div class="analyze-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin">
-                            <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
-                        </svg>
-                    </div>
-                `;
+                scanBtn.innerHTML = `ANALYZING...<div class="analyze-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg></div>`;
                 
-                showFeedback('info', 'Connecting to Intelligence Hub', 'Submitting for deep analysis...');
-                
-                const API_ENDPOINT = currentMode === 'url' ? "/analyze/url" : "/analyze/hash";
-                const payload = currentMode === 'url' ? { url: val } : { file_hash: val };
-
                 try {
-                    const response = await fetch(API_ENDPOINT, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
+                    let response;
+                    
+                    // Zafiyet Savunması: Form Data Header Manipülasyonu Yok
+                    // Fetch, FormData algıladığında Boundary ile multipart form verisini kendi oluşturur.
+                    if (currentMode === 'url') {
+                        response = await fetch("/analyze/url", {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ url: urlInput.value.trim() })
+                        });
+                    } else {
+                        const formData = new FormData();
+                        formData.append('file', selectedFile);
+                        response = await fetch("/analyze/file", {
+                            method: 'POST',
+                            body: formData
+                        });
+                    }
                     
                     const data = await response.json();
                     
                     if (response.ok) {
                         if (currentMode === 'url') {
-                            showFeedback('success', 'URL Scan Initiated', `
+                            showFeedback('success', 'Intelligence Scan Complete', `
                                 <strong>Target:</strong> ${data.url_scanned}<br>
-                                <strong>Status:</strong> ${data.message}<br>
-                                <strong>Action:</strong> ${data.action}<br>
-                                <strong>VT Ref:</strong> <small style="font-family: monospace">${data.vt_analysis_id}</small>
+                                <strong>Status:</strong> ${data.vt_analysis_id}<br>
+                                <strong>Action:</strong> ${data.action}
                             `);
                         } else {
-                            showFeedback('success', 'Hash Analysis Complete', `
-                                <strong>Hash:</strong> ${data.file_hash}<br>
+                            showFeedback('success', 'Hash Extraction & Analysis Complete', `
+                                <strong>Computed SHA-256:</strong> <span style="font-family: monospace; font-size: 10px;">${data.file_hash}</span><br>
                                 <strong>Status:</strong> ${data.message}<br>
                                 <strong>Action:</strong> ${data.action}
                             `);
                         }
                     } else {
-                        showFeedback('error', 'Analysis Failed', data.detail || 'The API rejected the request.');
+                        showFeedback('error', 'Analysis Rejected', data.detail || 'API failure.');
                     }
                 } catch (error) {
-                    showFeedback('error', 'Connection Error', 'Could not connect to the PhishingHub API.');
+                    showFeedback('error', 'Connection Error', 'Backend service unreachable.');
                 } finally {
                     scanBtn.disabled = false;
-                    scanBtn.innerHTML = `
-                        INITIATE SCAN
-                        <div class="analyze-icon">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                                <polyline points="12 5 19 12 12 19"></polyline>
-                            </svg>
-                        </div>
-                    `;
+                    scanBtn.innerHTML = `INITIATE SCAN<div class="analyze-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>`;
                 }
             });
             
@@ -408,23 +364,14 @@
                 resultBox.style.display = 'flex';
                 resultBox.className = `feedback-box ${type}`;
                 
-                let icon = '';
-                if (type === 'error') {
-                    icon = '<path d="M18 6L6 18M6 6l12 12"></path>';
-                } else if (type === 'success') {
-                    icon = '<polyline points="20 6 9 17 4 12"></polyline>';
-                } else {
-                    icon = '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>';
-                }
+                let icon = type === 'error' ? '<path d="M18 6L6 18M6 6l12 12"></path>' : '<polyline points="20 6 9 17 4 12"></polyline>';
                 
                 resultBox.innerHTML = `
-                    <div class="feedback-icon">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icon}</svg>
-                    </div>
-                    <div>
+                    <div class="feedback-header">
+                        <div class="feedback-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></div>
                         <strong>${title}</strong>
-                        <p>${message}</p>
                     </div>
+                    <div class="feedback-content">${message}</div>
                 `;
             }
         });
