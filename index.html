@@ -90,8 +90,8 @@
         .workspace-topline h2 { margin: 0; font: 600 26px/1 "Space Grotesk", sans-serif; letter-spacing: -.045em; }
         .workspace-index { color: var(--muted); }
         
-        .mode-tabs { display: flex; gap: 5px; margin: 22px 0 28px; border-bottom: 1px solid var(--line); }
-        .mode-tab { display: inline-flex; align-items: center; gap: 8px; padding: 0 12px 13px; margin-bottom: -1px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; }
+        .mode-tabs { display: flex; gap: 5px; margin: 22px 0 28px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+        .mode-tab { display: inline-flex; align-items: center; gap: 8px; padding: 0 12px 13px; margin-bottom: -1px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
         .mode-tab.active { color: var(--ink); border-color: var(--cobalt); }
         
         .input-stack { margin-bottom: 22px; }
@@ -116,13 +116,13 @@
         .analyze-button:hover { background: var(--cobalt); border-color: var(--cobalt); }
         .analyze-icon { display: grid; place-items: center; width: 34px; height: 34px; background: rgba(255,255,255,.12); }
         
-        .feedback-box { display: flex; gap: 11px; margin-top: 16px; padding: 13px; border: 1px solid #cfd5ef; background: #f4f6ff; color: #263970; flex-direction: column; }
+        .feedback-box { display: flex; gap: 11px; margin-top: 16px; padding: 13px; border: 1px solid #cfd5ef; background: #f4f6ff; color: #263970; flex-direction: column; max-height: 250px; overflow-y: auto; }
         .feedback-box.error { border-color: #ecc5bf; background: #fff3f0; color: #813d35; }
         .feedback-box.success { border-color: #c5dfc8; background: #f1faf1; color: #2c6735; }
         .feedback-header { display: flex; gap: 11px; align-items: center; }
         .feedback-icon { flex: 0 0 auto; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: currentColor; color: white; }
         .feedback-box strong { font-size: 12px; display: block; }
-        .feedback-content { margin-top: 8px; font-size: 11px; line-height: 1.5; padding-left: 33px; }
+        .feedback-content { margin-top: 8px; font-size: 11px; line-height: 1.5; padding-left: 33px; word-break: break-all; }
         
         .privacy-note { display: flex; align-items: center; gap: 9px; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.4; }
         .privacy-note svg { flex: 0 0 auto; color: var(--cobalt); }
@@ -158,12 +158,12 @@
                 <div class="hero-copy">
                     <div class="eyebrow"><div class="eyebrow-line"></div> PASSIVE INTELLIGENCE</div>
                     <h1>Detect malicious intent <em>before execution.</em></h1>
-                    <p class="hero-lead">PhishGuard acts as a secure airgap for suspicious links and files. Analyzed in isolation, designed to keep credentials safe.</p>
+                    <p class="hero-lead">PhishGuard acts as a secure airgap for suspicious links, files, and incoming mailboxes. Analyzed in isolation, designed to keep credentials safe.</p>
                     
                     <div class="hero-facts">
                         <div><div class="fact-mark">✓</div> Memory-Safe File Parsing</div>
                         <div><div class="fact-mark">✓</div> 70+ AV Engines (VirusTotal)</div>
-                        <div><div class="fact-mark">✓</div> Multi-Engine Architecture</div>
+                        <div><div class="fact-mark">✓</div> Automated IMAP Mail Scanning</div>
                     </div>
                     
                     <div class="hero-signature">SYSTEM ARCHITECTURE: FASTAPI ASYNC STREAM <div class="signature-rule"></div></div>
@@ -190,6 +190,12 @@
                                     <line x1="12" y1="3" x2="12" y2="15"></line>
                                 </svg> File Upload
                             </button>
+                            <button class="mode-tab" id="tab-imap">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                    <polyline points="22,6 12,13 2,6"></polyline>
+                                </svg> IMAP Inbox
+                            </button>
                         </div>
                         
                         <!-- URL INPUT UI -->
@@ -202,7 +208,7 @@
                                 </svg>
                                 <input type="text" id="target-url" placeholder="https://suspicious-link.com/invoice.pdf" autocomplete="off" />
                             </div>
-                            <p class="field-help">URLs are submitted securely via our backend relay.</p>
+                            <p class="field-help">URLs are submitted securely via multi-engine intelligence.</p>
                         </div>
 
                         <!-- FILE UPLOAD UI -->
@@ -221,7 +227,16 @@
                                 </div>
                                 <input type="file" id="file-input" style="display: none;">
                             </div>
-                            <p class="field-help">Files are chunk-streamed to calculate SHA-256. No payload execution occurs.</p>
+                            <p class="field-help">Files are chunk-streamed to calculate SHA-256 securely.</p>
+                        </div>
+
+                        <!-- IMAP INBOX UI -->
+                        <div class="input-stack" id="ui-imap" style="display: none;">
+                            <label class="input-label">IMAP Mailbox Polling</label>
+                            <div style="padding: 16px; border: 1px solid #bbb9b1; background: #fbfaf6; font-size: 12px; color: var(--muted); line-height: 1.5;">
+                                This module triggers backend polling to fetch unread emails via IMAP (Port 993), extracts embedded links, and runs them through multi-engine intelligence.
+                            </div>
+                            <p class="field-help">Ensure environment variables (IMAP_USER, IMAP_PASS) are active.</p>
                         </div>
                         
                         <button class="analyze-button" id="scan-btn">
@@ -255,8 +270,11 @@
 
             const tabUrl = document.getElementById('tab-url');
             const tabFile = document.getElementById('tab-file');
+            const tabImap = document.getElementById('tab-imap');
+            
             const uiUrl = document.getElementById('ui-url');
             const uiFile = document.getElementById('ui-file');
+            const uiImap = document.getElementById('ui-imap');
             
             const dropZone = document.getElementById('file-drop-zone');
             const fileInput = document.getElementById('file-input');
@@ -272,8 +290,10 @@
                 currentMode = 'url';
                 tabUrl.classList.add('active');
                 tabFile.classList.remove('active');
+                tabImap.classList.remove('active');
                 uiUrl.style.display = 'block';
                 uiFile.style.display = 'none';
+                uiImap.style.display = 'none';
                 resultBox.style.display = 'none';
             });
 
@@ -281,8 +301,21 @@
                 currentMode = 'file';
                 tabFile.classList.add('active');
                 tabUrl.classList.remove('active');
+                tabImap.classList.remove('active');
                 uiFile.style.display = 'block';
                 uiUrl.style.display = 'none';
+                uiImap.style.display = 'none';
+                resultBox.style.display = 'none';
+            });
+
+            tabImap.addEventListener('click', () => {
+                currentMode = 'imap';
+                tabImap.classList.add('active');
+                tabUrl.classList.remove('active');
+                tabFile.classList.remove('active');
+                uiImap.style.display = 'block';
+                uiUrl.style.display = 'none';
+                uiFile.style.display = 'none';
                 resultBox.style.display = 'none';
             });
 
@@ -316,20 +349,22 @@
                 try {
                     let response;
                     
-                    // Zafiyet Savunması: Form Data Header Manipülasyonu Yok
-                    // Fetch, FormData algıladığında Boundary ile multipart form verisini kendi oluşturur.
                     if (currentMode === 'url') {
                         response = await fetch("/analyze/url", {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ url: urlInput.value.trim() })
                         });
-                    } else {
+                    } else if (currentMode === 'file') {
                         const formData = new FormData();
                         formData.append('file', selectedFile);
                         response = await fetch("/analyze/file", {
                             method: 'POST',
                             body: formData
+                        });
+                    } else {
+                        response = await fetch("/analyze/imap", {
+                            method: 'POST'
                         });
                     }
                     
@@ -339,15 +374,35 @@
                         if (currentMode === 'url') {
                             showFeedback('success', 'Intelligence Scan Complete', `
                                 <strong>Target:</strong> ${data.url_scanned}<br>
-                                <strong>Status:</strong> ${data.vt_analysis_id}<br>
-                                <strong>Action:</strong> ${data.action}
+                                <strong>VT ID:</strong> ${data.vt_analysis_id}<br>
+                                <strong>Engines:</strong> ${data.action}
                             `);
-                        } else {
+                        } else if (currentMode === 'file') {
                             showFeedback('success', 'Hash Extraction & Analysis Complete', `
                                 <strong>Computed SHA-256:</strong> <span style="font-family: monospace; font-size: 10px;">${data.file_hash}</span><br>
                                 <strong>Status:</strong> ${data.message}<br>
                                 <strong>Action:</strong> ${data.action}
                             `);
+                        } else {
+                            let mailHtml = `<strong>${data.message}</strong><br><br>`;
+                            if (data.results && data.results.length > 0) {
+                                data.results.forEach((item, idx) => {
+                                    mailHtml += `<b>[${idx+1}] Konu:</b> ${item.subject}<br>`;
+                                    mailHtml += `<b>Kimden:</b> ${item.from}<br>`;
+                                    if(item.urls_found && item.urls_found.length > 0) {
+                                        mailHtml += `<b>Bulunan Linkler:</b><br>`;
+                                        item.urls_found.forEach(u => {
+                                            mailHtml += `&nbsp;&nbsp;- ${u.url} (URLhaus: ${u.urlhaus})<br>`;
+                                        });
+                                    } else {
+                                        mailHtml += `&nbsp;&nbsp;- Bağlantı tespit edilmedi.<br>`;
+                                    }
+                                    mailHtml += `<br>`;
+                                });
+                            } else {
+                                mailHtml += `İşlenecek okunmamış e-posta bulunamadı.`;
+                            }
+                            showFeedback('success', 'IMAP Polling Complete', mailHtml);
                         }
                     } else {
                         showFeedback('error', 'Analysis Rejected', data.detail || 'API failure.');
