@@ -1,0 +1,115 @@
+[
+    {
+        "label": "FileResponse",
+        "importPath": "fastapi.responses",
+        "description": "fastapi.responses",
+        "isExtraImport": true,
+        "detail": "fastapi.responses",
+        "documentation": {}
+    },
+    {
+        "label": "FastAPI",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "requests",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "requests",
+        "description": "requests",
+        "detail": "requests",
+        "documentation": {}
+    },
+    {
+        "label": "os",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
+        "documentation": {}
+    },
+    {
+        "label": "AnalyzeRequest",
+        "kind": 6,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "class AnalyzeRequest(BaseModel):\n    url: str\nclass HashAnalyzeRequest(BaseModel):\n    file_hash: str\n@app.get(\"/\")\ndef read_root():\n    return FileResponse(\"index.html\")\n@app.post(\"/analyze/url\")\ndef analyze_phishing_url(request: AnalyzeRequest):\n    target_url = request.url",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "HashAnalyzeRequest",
+        "kind": 6,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "class HashAnalyzeRequest(BaseModel):\n    file_hash: str\n@app.get(\"/\")\ndef read_root():\n    return FileResponse(\"index.html\")\n@app.post(\"/analyze/url\")\ndef analyze_phishing_url(request: AnalyzeRequest):\n    target_url = request.url\n    vt_endpoint = \"https://www.virustotal.com/api/v3/urls\"\n    vt_headers = {",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "read_root",
+        "kind": 2,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "def read_root():\n    return FileResponse(\"index.html\")\n@app.post(\"/analyze/url\")\ndef analyze_phishing_url(request: AnalyzeRequest):\n    target_url = request.url\n    vt_endpoint = \"https://www.virustotal.com/api/v3/urls\"\n    vt_headers = {\n        \"accept\": \"application/json\",\n        \"x-apikey\": VT_API_KEY,\n        \"content-type\": \"application/x-www-form-urlencoded\"",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "analyze_phishing_url",
+        "kind": 2,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "def analyze_phishing_url(request: AnalyzeRequest):\n    target_url = request.url\n    vt_endpoint = \"https://www.virustotal.com/api/v3/urls\"\n    vt_headers = {\n        \"accept\": \"application/json\",\n        \"x-apikey\": VT_API_KEY,\n        \"content-type\": \"application/x-www-form-urlencoded\"\n    }\n    try:\n        vt_resp = requests.post(vt_endpoint, data={\"url\": target_url}, headers=vt_headers)",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "analyze_file_hash",
+        "kind": 2,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "def analyze_file_hash(request: HashAnalyzeRequest):\n    \"\"\"\n    Gelen dosya hash değerini (MD5/SHA256) VirusTotal üzerinden sorgular.\n    \"\"\"\n    file_hash = request.file_hash.strip()\n    vt_endpoint = f\"https://www.virustotal.com/api/v3/files/{file_hash}\"\n    vt_headers = {\n        \"accept\": \"application/json\",\n        \"x-apikey\": VT_API_KEY\n    }",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "app",
+        "kind": 5,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "app = FastAPI(title=\"Phishing Analyzer Hub\")\nVT_API_KEY = os.environ.get(\"VT_API_KEY\", \"bf00aab82a6caad5ca0d913ad3567663d8d957d1f4e9fb8e76601b59cfff843e\")\nclass AnalyzeRequest(BaseModel):\n    url: str\nclass HashAnalyzeRequest(BaseModel):\n    file_hash: str\n@app.get(\"/\")\ndef read_root():\n    return FileResponse(\"index.html\")\n@app.post(\"/analyze/url\")",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "VT_API_KEY",
+        "kind": 5,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "VT_API_KEY = os.environ.get(\"VT_API_KEY\", \"bf00aab82a6caad5ca0d913ad3567663d8d957d1f4e9fb8e76601b59cfff843e\")\nclass AnalyzeRequest(BaseModel):\n    url: str\nclass HashAnalyzeRequest(BaseModel):\n    file_hash: str\n@app.get(\"/\")\ndef read_root():\n    return FileResponse(\"index.html\")\n@app.post(\"/analyze/url\")\ndef analyze_phishing_url(request: AnalyzeRequest):",
+        "detail": "main",
+        "documentation": {}
+    }
+]

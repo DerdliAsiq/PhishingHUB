@@ -315,19 +315,37 @@
             const scanBtn = document.getElementById('scan-btn');
             const urlInput = document.getElementById('target-url');
             const resultBox = document.getElementById('result-box');
+            const modeTabs = document.querySelectorAll('.mode-tab');
             
-            // Doğrudan aynı domain üzerinden istek atılacağı için sadece path kullanıyoruz (CORS hatasını çözer)
-            const API_ENDPOINT = "/analyze/url";
+            let currentMode = 'url'; // Başlangıç modu
+
+            // Sekme değiştirme mantığı
+            modeTabs.forEach((tab, index) => {
+                tab.addEventListener('click', () => {
+                    modeTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    resultBox.style.display = 'none';
+
+                    if (index === 0) {
+                        currentMode = 'url';
+                        urlInput.placeholder = "https://suspicious-link.com/invoice.pdf";
+                        document.querySelector('label[for="target-url"]').innerText = "Target Address";
+                    } else {
+                        currentMode = 'hash';
+                        urlInput.placeholder = "44d88612fea8a8f36de82e1278abb02f (MD5 / SHA256)";
+                        document.querySelector('label[for="target-url"]').innerText = "File Hash (MD5 / SHA256)";
+                    }
+                });
+            });
 
             scanBtn.addEventListener('click', async () => {
-                const url = urlInput.value.trim();
+                const val = urlInput.value.trim();
                 
-                if (!url) {
-                    showFeedback('error', 'Target Required', 'Please enter a URL to scan.');
+                if (!val) {
+                    showFeedback('error', 'Target Required', 'Please enter a URL or File Hash to scan.');
                     return;
                 }
                 
-                // Show loading state
                 scanBtn.disabled = true;
                 scanBtn.innerHTML = `
                     ANALYZING...
@@ -338,29 +356,40 @@
                     </div>
                 `;
                 
-                showFeedback('info', 'Connecting to Intelligence Hub', 'Submitting URL for deep analysis...');
+                showFeedback('info', 'Connecting to Intelligence Hub', 'Submitting for deep analysis...');
                 
+                const API_ENDPOINT = currentMode === 'url' ? "/analyze/url" : "/analyze/hash";
+                const payload = currentMode === 'url' ? { url: val } : { file_hash: val };
+
                 try {
                     const response = await fetch(API_ENDPOINT, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ url: url })
+                        body: JSON.stringify(payload)
                     });
                     
                     const data = await response.json();
                     
                     if (response.ok) {
-                        showFeedback('success', 'Scan Initiated Successfully', `
-                            <strong>Target:</strong> ${data.url_scanned}<br>
-                            <strong>Status:</strong> ${data.message}<br>
-                            <strong>Action:</strong> ${data.action}<br>
-                            <strong>VT Ref:</strong> <small style="font-family: monospace">${data.vt_analysis_id}</small>
-                        `);
+                        if (currentMode === 'url') {
+                            showFeedback('success', 'URL Scan Initiated', `
+                                <strong>Target:</strong> ${data.url_scanned}<br>
+                                <strong>Status:</strong> ${data.message}<br>
+                                <strong>Action:</strong> ${data.action}<br>
+                                <strong>VT Ref:</strong> <small style="font-family: monospace">${data.vt_analysis_id}</small>
+                            `);
+                        } else {
+                            showFeedback('success', 'Hash Analysis Complete', `
+                                <strong>Hash:</strong> ${data.file_hash}<br>
+                                <strong>Status:</strong> ${data.message}<br>
+                                <strong>Action:</strong> ${data.action}
+                            `);
+                        }
                     } else {
                         showFeedback('error', 'Analysis Failed', data.detail || 'The API rejected the request.');
                     }
                 } catch (error) {
-                    showFeedback('error', 'Connection Error', 'Could not connect to the PhishingHub API. Ensure the backend on Render is running.');
+                    showFeedback('error', 'Connection Error', 'Could not connect to the PhishingHub API.');
                 } finally {
                     scanBtn.disabled = false;
                     scanBtn.innerHTML = `
