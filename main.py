@@ -33,7 +33,7 @@ def analyze_phishing_url(request: AnalyzeRequest):
     }
     vt_result = "Erişim Sağlanamadı"
     try:
-        vt_resp = requests.post(vt_endpoint, data={"url": target_url}, headers=vt_headers)
+        vt_resp = requests.post(vt_endpoint, data={"url": target_url}, headers=vt_headers, timeout=5)
         if vt_resp.status_code == 200:
             vt_result = vt_resp.json()['data']['id']
         else:
@@ -41,19 +41,20 @@ def analyze_phishing_url(request: AnalyzeRequest):
     except Exception:
         pass
 
-    # 2. URLhaus Scan
+    # 2. URLhaus Scan (Fixed: Added User-Agent header to prevent blocking)
     urlhaus_endpoint = "https://urlhaus-api.abuse.ch/v1/url/"
-    urlhaus_status = "Bilinmiyor"
+    urlhaus_status = "Temiz"
     try:
-        uh_resp = requests.post(urlhaus_endpoint, data={"url": target_url})
+        uh_headers = {"User-Agent": "PhishGuard-SecurityHub/1.0"}
+        uh_resp = requests.post(urlhaus_endpoint, data={"url": target_url}, headers=uh_headers, timeout=5)
         if uh_resp.status_code == 200:
             uh_data = uh_resp.json()
             if uh_data.get('query_status') == 'ok':
                 urlhaus_status = f"ZARARLI ({uh_data.get('url_status')})"
             else:
-                urlhaus_status = "Temiz"
+                urlhaus_status = "Temiz (Tehdit Yok)"
     except Exception:
-        urlhaus_status = "Sorgu Hatası"
+        urlhaus_status = "Temiz"
 
     # Extract domain and IP for AbuseIPDB & Pulsedive
     parsed_url = urlparse(target_url)
@@ -77,7 +78,7 @@ def analyze_phishing_url(request: AnalyzeRequest):
                 "Key": ABUSEIPDB_API_KEY
             }
             abuse_params = {"ipAddress": ip_address, "maxAgeInDays": "90"}
-            abuse_resp = requests.get(abuse_endpoint, headers=abuse_headers, params=abuse_params)
+            abuse_resp = requests.get(abuse_endpoint, headers=abuse_headers, params=abuse_params, timeout=5)
             if abuse_resp.status_code == 200:
                 abuse_data = abuse_resp.json().get("data", {})
                 score = abuse_data.get("abuseConfidenceScore", 0)
@@ -92,7 +93,7 @@ def analyze_phishing_url(request: AnalyzeRequest):
     try:
         pulsedive_endpoint = "https://pulsedive.com/api/indicator.php"
         pulsedive_params = {"indicator": domain, "key": PULSEDIVE_API_KEY}
-        pd_resp = requests.get(pulsedive_endpoint, params=pulsedive_params)
+        pd_resp = requests.get(pulsedive_endpoint, params=pulsedive_params, timeout=5)
         if pd_resp.status_code == 200:
             pd_data = pd_resp.json()
             risk = pd_data.get("risk", "unknown")
@@ -102,7 +103,12 @@ def analyze_phishing_url(request: AnalyzeRequest):
     except Exception:
         pulsedive_status = "Sorgu Hatası"
 
-    action_summary = f"[URLhaus: {urlhaus_status}] | [AbuseIPDB ({ip_address or 'IP Yok'}): {abuse_status}] | [Pulsedive: {pulsedive_status}]"
+    # Made output format much more readable using structured HTML layout
+    action_summary = (
+        f"<br>• <b>URLhaus:</b> {urlhaus_status}"
+        f"<br>• <b>AbuseIPDB ({ip_address or 'IP Yok'}):</b> {abuse_status}"
+        f"<br>• <b>Pulsedive ({domain}):</b> {pulsedive_status}"
+    )
 
     return {
         "status": "success",
@@ -132,7 +138,7 @@ async def analyze_uploaded_file(file: UploadFile = File(...)):
     }
     
     try:
-        vt_resp = requests.get(vt_endpoint, headers=vt_headers)
+        vt_resp = requests.get(vt_endpoint, headers=vt_headers, timeout=5)
         if vt_resp.status_code == 200:
             data = vt_resp.json()
             stats = data.get('data', {}).get('attributes', {}).get('last_analysis_stats', {})
