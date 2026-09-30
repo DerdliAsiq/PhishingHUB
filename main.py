@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from pydantic import BaseModel, HttpUrl, Field, field_validator
 from pathlib import Path
@@ -65,6 +66,10 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="PhishingHUB", lifespan=lifespan)
+
+STATIC_DIR = BASE_DIR / "static"
+STATIC_DIR.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 def get_client() -> httpx.AsyncClient:
@@ -504,7 +509,7 @@ def read_root():
     index_path = BASE_DIR / "index.html"
     if not index_path.exists():
         raise HTTPException(status_code=500, detail="index.html bulunamadı.")
-    return FileResponse(str(index_path))
+    return FileResponse(str(index_path), headers={"Cache-Control": "public, max-age=300"})
 
 
 @app.post("/analyze/url")
