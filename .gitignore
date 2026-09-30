@@ -1,0 +1,18 @@
+# Virtual Environments
+venv/
+env/
+.venv/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Gizli Dosyalar ve API Anahtarları
+.env
+.env.local
+
+# IDE ve İşletim Sistemi
+.vscode/
+.DS_Store
