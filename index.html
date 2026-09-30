@@ -126,6 +126,20 @@
         
         .privacy-note { display: flex; align-items: center; gap: 9px; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.4; }
         .privacy-note svg { flex: 0 0 auto; color: var(--cobalt); }
+
+        .ai-section { padding: 0 0 40px; }
+        .ai-card { background: var(--white); padding: 28px; border: 1px solid #dedbd3; box-shadow: 15px 18px 0 rgba(21,23,25,.045); position: relative; }
+        .ai-messages { display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; margin: 18px 0 14px; padding: 14px; border: 1px solid #bbb9b1; background: #fbfaf6; font-size: 13px; line-height: 1.55; }
+        .ai-msg { max-width: 92%; padding: 9px 12px; border: 1px solid var(--line); background: white; white-space: pre-wrap; word-break: break-word; }
+        .ai-msg.user { align-self: flex-end; background: var(--cobalt-soft); border-color: #cfd5ef; }
+        .ai-msg.assistant { align-self: flex-start; }
+        .ai-msg.system { align-self: center; color: var(--muted); font-size: 11px; border-style: dashed; background: transparent; }
+        .ai-input-row { display: flex; gap: 8px; }
+        .ai-input-row input { flex: 1; min-width: 0; padding: 13px 12px; border: 1px solid #bbb9b1; background: #fbfaf6; outline: 0; font-size: 13px; }
+        .ai-input-row input:focus { border-color: var(--cobalt); box-shadow: 0 0 0 3px rgba(36,87,230,.1); }
+        .ai-send { flex: 0 0 auto; padding: 0 18px; border: 1px solid var(--ink); background: var(--ink); color: white; font-weight: 700; font-size: 12px; }
+        .ai-send:hover:not(:disabled) { background: var(--cobalt); border-color: var(--cobalt); }
+        .ai-options { display: flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--muted); font-size: 11px; }
         
         .site-footer { display: flex; align-items: center; justify-content: space-between; min-height: 75px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; margin-top: 40px; }
         .footer-brand { display: flex; align-items: center; gap: 8px; }
@@ -305,6 +319,24 @@
                     </div>
                 </div>
             </section>
+
+            <section class="ai-section">
+                <div class="workspace-card ai-card">
+                    <div class="workspace-topline">
+                        <div><span class="section-kicker">AI ASSISTANT</span><h2>Analiz Asistanı</h2></div>
+                        <div class="workspace-index">MOD-02</div>
+                    </div>
+                    <p class="field-help">Son tarama sonuçlarını sor — AI verdict'i yorumlar, sonraki adımı önerir. Linke tıklamanı asla istemez.</p>
+                    <div class="ai-messages" id="ai-messages">
+                        <div class="ai-msg system">Henüz soru yok. Önce bir tarama yapıp sonra sorabilirsin.</div>
+                    </div>
+                    <div class="ai-input-row">
+                        <input type="text" id="ai-input" placeholder="örn. Bu sonuç ne anlama geliyor?" autocomplete="off" maxlength="2000" />
+                        <button class="ai-send" id="ai-send">SOR</button>
+                    </div>
+                    <label class="ai-options"><input type="checkbox" id="ai-include" checked /> Son tarama sonucunu ekle</label>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -330,6 +362,12 @@
             const scanBtn = document.getElementById('scan-btn');
             const urlInput = document.getElementById('target-url');
             const resultBox = document.getElementById('result-box');
+            let scanContext = null;
+
+            const aiMessages = document.getElementById('ai-messages');
+            const aiInput = document.getElementById('ai-input');
+            const aiSend = document.getElementById('ai-send');
+            const aiInclude = document.getElementById('ai-include');
 
             function escapeHtml(v) {
                 return String(v == null ? '' : v)
@@ -503,13 +541,16 @@
 
                     if (response.ok) {
                         if (currentMode === 'url') {
+                            scanContext = Object.assign({ type: 'url' }, data);
                             showFeedback('success', 'Intelligence Scan Complete', renderUrlResult(data));
                         } else if (currentMode === 'file') {
+                            scanContext = Object.assign({ type: 'file' }, data);
                             showFeedback('success', 'Hash Extraction & Analysis Complete', ''
                                 + '<strong>Computed SHA-256:</strong> <span style="font-family: monospace; font-size: 10px;">' + escapeHtml(data.file_hash) + '</span><br>'
                                 + '<strong>Status:</strong> ' + escapeHtml(data.message) + '<br>'
                                 + '<strong>Action:</strong> ' + escapeHtml(data.action));
                         } else {
+                            scanContext = Object.assign({ type: 'imap' }, data);
                             showFeedback('success', 'IMAP Polling Complete', renderImapResult(data));
                         }
                     } else {
@@ -525,6 +566,55 @@
                     scanBtn.disabled = false;
                     scanBtn.innerHTML = `INITIATE SCAN<div class="analyze-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>`;
                 }
+            });
+
+            function addChatMsg(role, text) {
+                const sys = aiMessages.querySelector('.ai-msg.system');
+                if (sys) sys.remove();
+                const div = document.createElement('div');
+                div.className = 'ai-msg ' + role;
+                div.textContent = text;
+                aiMessages.appendChild(div);
+                aiMessages.scrollTop = aiMessages.scrollHeight;
+                return div;
+            }
+
+            async function sendChat() {
+                const text = aiInput.value.trim();
+                if (!text || aiSend.disabled) return;
+                addChatMsg('user', text);
+                aiInput.value = '';
+                aiSend.disabled = true;
+                const pending = addChatMsg('assistant', 'Yazıyor...');
+                try {
+                    const response = await fetch('/analyze/ai-chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: text,
+                            context: (aiInclude && aiInclude.checked) ? scanContext : null
+                        })
+                    });
+                    let data = {};
+                    try { data = await response.json(); } catch (e) { data = {}; }
+                    if (response.ok) {
+                        pending.textContent = data.reply || '(boş cevap)';
+                    } else {
+                        let msg = data.detail || 'AI hatası.';
+                        if (Array.isArray(msg)) msg = msg.map(d => d.msg || JSON.stringify(d)).join('; ');
+                        pending.textContent = 'Hata: ' + msg;
+                    }
+                } catch (e) {
+                    pending.textContent = 'Hata: AI servisine ulaşılamadı.';
+                } finally {
+                    aiSend.disabled = false;
+                    aiMessages.scrollTop = aiMessages.scrollHeight;
+                }
+            }
+
+            aiSend.addEventListener('click', sendChat);
+            aiInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') sendChat();
             });
 
             function showFeedback(type, title, messageHtml) {
