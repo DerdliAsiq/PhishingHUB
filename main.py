@@ -14,6 +14,7 @@ import html as _html
 import imaplib
 import email
 import ipaddress
+import logging
 import os
 import re
 import socket
@@ -42,6 +43,7 @@ IMAP_PASS = os.getenv("IMAP_PASS", "")
 # --- AI chat (OpenRouter): env only, değer koda yazılmaz ---
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "meta-llama/llama-3.3-70b-instruct:free")
+AI_FALLBACK_MODEL = os.getenv("AI_FALLBACK_MODEL", "meta-llama/llama-3.1-8b-instruct:free")
 AI_TIMEOUT = 30.0
 AI_MAX_CONTEXT_CHARS = 4000
 AI_RATE_LIMIT = 10  # dakikada istek/IP
@@ -736,6 +738,49 @@ def build_ai_context_summary(context: dict | None) -> str:
     return text
 
 
+logger = logging.getLogger("phishinghub")
+
+
+def extract_reply_text(payload: dict) -> str | None:
+    """OpenRouter cevabından metni ayıklar: content → reasoning → text blokları."""
+    try:
+        choices = (payload or {}).get("choices") or []
+        if not choices or not isinstance(choices[0], dict):
+            return None
+        msg = choices[0].get("message") or {}
+        content = msg.get("content")
+        if isinstance(content, str) and content.strip():
+            return content.strip()
+        if isinstance(content, list):
+            parts = [
+                b.get("text", "")
+                for b in content
+                if isinstance(b, dict) and b.get("type") == "text" and b.get("text")
+            ]
+            text = "".join(parts).strip()
+            if text:
+                return text
+        reasoning = msg.get("reasoning")
+        if isinstance(reasoning, str) and reasoning.strip():
+            return reasoning.strip()
+        return None
+    except Exception:
+        return None
+
+
+def describe_reply_schema(payload: dict) -> str:
+    """Teşhis için gövde şemasının özeti (içerik loglanmaz)."""
+    try:
+        top = sorted((payload or {}).keys())
+        first = ((payload or {}).get("choices") or [None])[0]
+        sub = sorted((first or {}).keys()) if isinstance(first, dict) else []
+        msg = (first or {}).get("message") if isinstance(first, dict) else None
+        msg_keys = sorted(msg.keys()) if isinstance(msg, dict) else []
+        return f"top={top} choice={sub} msg={msg_keys}"
+    except Exception:
+        return "?"
+
+
 async def call_openrouter(user_text: str) -> str:
     if not OPENROUTER_API_KEY:
         raise HTTPException(status_code=503, detail="AI yapılandırılmamış (OPENROUTER_API_KEY env).")
@@ -743,42 +788,68 @@ async def call_openrouter(user_text: str) -> str:
     api_key = os.getenv("OPENROUTER_API_KEY") or OPENROUTER_API_KEY
     if not api_key:
         raise HTTPException(status_code=503, detail="AI yapılandırılmamış (OPENROUTER_API_KEY env).")
-    try:
-        async with httpx.AsyncClient(timeout=AI_TIMEOUT) as client:
-            r = await client.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://github.com/DerdliAsiq/PhishingHUB",
-                    "X-Title": "PhishingHUB",
-                },
-                json={
-                    "model": os.getenv("AI_MODEL", AI_MODEL),
-                    "max_tokens": AI_MAX_TOKENS,
-                    "temperature": AI_TEMPERATURE,
-                    "messages": [
-                        {"role": "system", "content": AI_SYSTEM_PROMPT},
-                        {"role": "user", "content": user_text},
-                    ],
-                },
-            )
-    except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="AI zaman aşımı, tekrar deneyin.")
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=503, detail="AI servisine ulaşılamadı.")
-    if r.status_code == 200:
+    primary = os.getenv("AI_MODEL", AI_MODEL)
+    fallback = os.getenv("AI_FALLBACK_MODEL", AI_FALLBACK_MODEL)
+    models = [primary] + ([fallback] if fallback and fallback != primary else [])
+    last_error: HTTPException | None = None
+    for model in models:
         try:
-            return r.json()["choices"][0]["message"]["content"].strip()
+            async with httpx.AsyncClient(timeout=AI_TIMEOUT) as client:
+                r = await client.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://github.com/DerdliAsiq/PhishingHUB",
+                        "X-Title": "PhishingHUB",
+                    },
+                    json={
+                        "model": model,
+                        "max_tokens": AI_MAX_TOKENS,
+                        "temperature": AI_TEMPERATURE,
+                        "messages": [
+                            {"role": "system", "content": AI_SYSTEM_PROMPT},
+                            {"role": "user", "content": user_text},
+                        ],
+                    },
+                )
+        except httpx.TimeoutException:
+            raise HTTPException(status_code=504, detail="AI zaman aşımı, tekrar deneyin.")
+        except HTTPException:
+            raise
         except Exception:
-            raise HTTPException(status_code=503, detail="AI cevabı okunamadı.")
-    if r.status_code == 401:
-        raise HTTPException(status_code=503, detail="AI: geçersiz API anahtarı (401).")
-    if r.status_code in (402, 429):
-        raise HTTPException(status_code=503, detail="AI kotası/limiti aşıldı, sonra tekrar deneyin.")
-    raise HTTPException(status_code=503, detail=f"AI hatası (HTTP {r.status_code}).")
+            raise HTTPException(status_code=503, detail="AI servisine ulaşılamadı.")
+        if r.status_code == 200:
+            try:
+                payload = r.json()
+            except Exception:
+                last_error = HTTPException(status_code=503, detail="AI cevabı okunamadı (JSON değil).")
+                continue
+            if isinstance(payload, dict) and payload.get("error") and not payload.get("choices"):
+                err = payload.get("error")
+                msg = (err.get("message", "") if isinstance(err, dict) else str(err)) or "bilinmiyor"
+                logger.warning("openrouter error-in-200 model=%s: %s", model, str(msg)[:200])
+                last_error = HTTPException(status_code=503, detail=f"AI hatası: {str(msg)[:200]}")
+                continue
+            text = extract_reply_text(payload if isinstance(payload, dict) else {})
+            if text:
+                if model != primary:
+                    logger.info("openrouter fallback model kullanıldı: %s", model)
+                return text
+            logger.warning(
+                "openrouter içeriksiz cevap model=%s şema=%s",
+                model,
+                describe_reply_schema(payload if isinstance(payload, dict) else {}),
+            )
+            last_error = HTTPException(status_code=503, detail="AI boş cevap döndü, sonra tekrar deneyin.")
+            continue
+        if r.status_code == 401:
+            raise HTTPException(status_code=503, detail="AI: geçersiz API anahtarı (401).")
+        if r.status_code in (402, 429):
+            raise HTTPException(status_code=503, detail="AI kotası/limiti aşıldı, sonra tekrar deneyin.")
+        logger.warning("openrouter HTTP %s model=%s", r.status_code, model)
+        last_error = HTTPException(status_code=503, detail=f"AI hatası (HTTP {r.status_code}).")
+    raise last_error or HTTPException(status_code=503, detail="AI hatası.")
 
 
 @app.get("/health")

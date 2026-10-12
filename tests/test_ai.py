@@ -75,3 +75,77 @@ def test_ai_validation():
     main._ai_hits.clear()
     r = _client().post("/analyze/ai-chat", json={"message": ""})
     assert r.status_code == 422
+
+
+def test_extract_reply_variants():
+    assert main.extract_reply_text({"choices": [{"message": {"content": "  merhaba  "}}]}) == "merhaba"
+    assert main.extract_reply_text({"choices": [{"message": {"content": None, "reasoning": "akıl yürütme"}}]}) == "akıl yürütme"
+    assert main.extract_reply_text({"choices": [{"message": {"content": [{"type": "text", "text": "blok"}]}}]}) == "blok"
+    assert main.extract_reply_text({"choices": []}) is None
+    assert main.extract_reply_text({}) is None
+
+
+def test_openrouter_fallback(monkeypatch):
+    import asyncio
+
+    class Resp:
+        def __init__(self, status, payload):
+            self.status_code = status
+            self._p = payload
+
+        def json(self):
+            return self._p
+
+    class Client:
+        responses = []
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, *a, **k):
+            return Client.responses.pop(0)
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "dummy")
+    monkeypatch.setattr(main, "OPENROUTER_API_KEY", "dummy")
+    monkeypatch.setattr(main.httpx, "AsyncClient", lambda **k: Client())
+    Client.responses = [
+        Resp(200, {"choices": [{"message": {"content": None}}]}),
+        Resp(200, {"choices": [{"message": {"content": "fallback ok\nRISK: 5"}}]}),
+    ]
+    out = asyncio.run(main.call_openrouter("test"))
+    assert out == "fallback ok\nRISK: 5"
+
+
+def test_openrouter_error_in_200(monkeypatch):
+    import asyncio
+    from fastapi import HTTPException
+
+    class Resp:
+        status_code = 200
+
+        def json(self):
+            return {"error": {"message": "No endpoints found"}}
+
+    class Client:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, *a, **k):
+            return Resp()
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "dummy")
+    monkeypatch.setattr(main, "OPENROUTER_API_KEY", "dummy")
+    monkeypatch.delenv("AI_FALLBACK_MODEL", raising=False)
+    monkeypatch.setattr(main, "AI_FALLBACK_MODEL", "")
+    monkeypatch.setattr(main.httpx, "AsyncClient", lambda **k: Client())
+    try:
+        asyncio.run(main.call_openrouter("test"))
+        assert False, "hata bekleniyordu"
+    except HTTPException as e:
+        assert "No endpoints found" in e.detail
