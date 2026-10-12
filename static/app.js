@@ -258,6 +258,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     + vtBarHtml(vt.stats);
             }
 
+            function shortUrl(u, n) {
+                u = String(u || '');
+                return u.length > n ? u.slice(0, n) + '…' : u;
+            }
+
             function renderImapResult(data) {
                 let html = '<strong>' + escapeHtml(data.message) + '</strong><br><br>';
                 if (data.results && data.results.length > 0) {
@@ -268,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             html += '<b>Bulunan Linkler:</b><br>';
                             item.urls_found.forEach(u => {
                                 const vt = u.virustotal || {};
-                                html += '&nbsp;&nbsp;- ' + escapeHtml(u.url) + ' ' + verdictBadge(u.verdict)
+                                html += '&nbsp;&nbsp;- <span title="' + escapeHtml(u.url) + '">' + escapeHtml(shortUrl(u.url, 72)) + '</span> ' + verdictBadge(u.verdict)
                                     + ' (URLhaus: ' + escapeHtml((u.urlhaus || {}).status || '') + ', VT: ' + escapeHtml(vt.verdict || vt.status || '') + ')<br>';
                             });
                         } else {
@@ -375,15 +380,62 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            function addChatMsg(role, text) {
+            function addChatMsg(role, text, md) {
                 const sys = aiMessages.querySelector('.ai-msg.system');
                 if (sys) sys.remove();
                 const div = document.createElement('div');
                 div.className = 'ai-msg ' + role;
-                div.textContent = text;
+                if (md) {
+                    div.innerHTML = renderMarkdownLite(text);
+                } else {
+                    div.textContent = text;
+                }
                 aiMessages.appendChild(div);
                 aiMessages.scrollTop = aiMessages.scrollHeight;
                 return div;
+            }
+
+            function renderMarkdownLite(text) {
+                let t = String(text == null ? '' : text).replace(/^"+|"+$/g, '').trim();
+                let h = escapeHtml(t);
+                h = h.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+                const lines = h.split('\n');
+                let out = '', inList = false;
+                lines.forEach(ln => {
+                    const m = ln.match(/^\s*[-•]\s+(.*)$/);
+                    if (m) {
+                        if (!inList) { out += '<ul>'; inList = true; }
+                        out += '<li>' + m[1] + '</li>';
+                    } else {
+                        if (inList) { out += '</ul>'; inList = false; }
+                        if (ln.trim() !== '') out += ln + '<br>';
+                    }
+                });
+                if (inList) out += '</ul>';
+                return out;
+            }
+
+            function scanMiniBars(ctx) {
+                if (!ctx) return '';
+                try {
+                    if (ctx.type === 'url') {
+                        const vt = ctx.virustotal || {};
+                        return verdictBadge(ctx.verdict) + vtBarHtml(vt.stats);
+                    }
+                    if (ctx.type === 'file') {
+                        return vtBarHtml(ctx.stats);
+                    }
+                    if (ctx.type === 'imap') {
+                        let html = '';
+                        (ctx.results || []).slice(0, 5).forEach((m, i) => {
+                            const first = (m.urls_found && m.urls_found[0]) || null;
+                            html += '<div>[' + (i + 1) + '] ' + escapeHtml(m.subject || '?') + ' '
+                                + (first ? verdictBadge(first.verdict) : '<span class="verdict v-unknown">? linksiz</span>') + '</div>';
+                        });
+                        return html || 'Mail yok.';
+                    }
+                } catch (e) { return ''; }
+                return '';
             }
 
             let aiBusy = false;
@@ -431,7 +483,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const pending = addChatMsg('assistant', 'Otomatik analiz yapılıyor...');
                 try {
                     const data = await askAi('Bu sonucu kısaca yorumla.', scanContext);
-                    pending.textContent = data.reply || '(boş cevap)';
+                    pending.innerHTML = renderMarkdownLite(data.reply || '(boş cevap)')
+                        + scanMiniBars(scanContext);
                     if (data.risk != null) addRiskMeter(pending, data.risk);
                 } catch (e) {
                     pending.textContent = 'Otomatik analiz yapılamadı: ' + (e.message || 'hata');
@@ -452,7 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const pending = addChatMsg('assistant', 'Yazıyor...');
                 try {
                     const data = await askAi(text, (aiInclude && aiInclude.checked) ? scanContext : null);
-                    pending.textContent = data.reply || '(boş cevap)';
+                    pending.innerHTML = renderMarkdownLite(data.reply || '(boş cevap)');
                     if (data.risk != null) addRiskMeter(pending, data.risk);
                 } catch (e) {
                     pending.textContent = 'Hata: ' + (e.message || 'AI servisine ulaşılamadı.');

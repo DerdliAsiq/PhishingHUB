@@ -125,6 +125,10 @@
         .ai-msg.user { align-self: flex-end; background: var(--cobalt-soft); border-color: #cfd5ef; }
         .ai-msg.assistant { align-self: flex-start; }
         .ai-msg.system { align-self: center; color: var(--muted); font-size: 11px; border-style: dashed; background: transparent; }
+        .ai-msg ul { margin: 6px 0; padding-left: 18px; }
+        .ai-msg li { margin: 3px 0; }
+        .ai-msg strong { color: var(--ink); }
+        .ai-msg .verdict { margin: 2px 0; }
         .ai-input-row { display: flex; gap: 8px; }
         .ai-input-row input { flex: 1; min-width: 0; padding: 13px 12px; border: 1px solid #bbb9b1; background: #fbfaf6; outline: 0; font-size: 13px; }
         .ai-input-row input:focus { border-color: var(--cobalt); box-shadow: 0 0 0 3px rgba(36,87,230,.1); }

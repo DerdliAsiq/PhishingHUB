@@ -40,6 +40,21 @@ def test_verdict_logic():
     assert v2 == "clean"
 
 
+def test_html_entity_unescape():
+    u = main.normalize_url("https://x.com/a?b=1&amp;c=2")
+    assert u == "https://x.com/a?b=1&c=2"
+
+
+def test_asset_urls_skipped():
+    urls = main.extract_urls_from_blob(
+        "bak https://example.com/a.css ve https://example.com/logo.png",
+        '<link href="https://example.com/s.css">',
+    )
+    assert urls == []
+    assert main.is_skippable_asset("https://x.com/f.js") is True
+    assert main.is_skippable_asset("https://x.com/invoice.pdf") is False
+
+
 def test_parse_email_html_and_attachment():
     from email.message import EmailMessage
     msg = EmailMessage()

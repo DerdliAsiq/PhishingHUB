@@ -10,6 +10,7 @@ from email.message import Message
 import asyncio
 import base64
 import hashlib
+import html as _html
 import imaplib
 import email
 import ipaddress
@@ -17,6 +18,13 @@ import os
 import re
 import socket
 import time
+
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
 
 import httpx
 
@@ -105,7 +113,8 @@ def normalize_url(raw: str) -> str | None:
     raw = (raw or "").strip()
     if not raw:
         return None
-    raw = strip_trailing_punct(raw)
+    raw = _html.unescape(raw)
+    raw = strip_trailing_punct(raw.strip())
     if len(raw) > 2048:
         return None
     if raw.lower().startswith("www."):
@@ -119,6 +128,21 @@ def normalize_url(raw: str) -> str | None:
         return raw
     except Exception:
         return None
+
+
+# Mail gövdelerinden çıkan, taranmaya değmez statik asset uzantıları
+SKIP_URL_EXTS = frozenset({
+    ".css", ".js", ".map", ".png", ".jpg", ".jpeg", ".gif", ".svg",
+    ".ico", ".webp", ".woff", ".woff2", ".ttf", ".otf", ".mp4", ".mp3",
+})
+
+
+def is_skippable_asset(url: str) -> bool:
+    try:
+        path = urlparse(url).path.lower()
+        return any(path.endswith(ext) for ext in SKIP_URL_EXTS)
+    except Exception:
+        return False
 
 
 def extract_domain(target_url: str) -> str:
@@ -386,7 +410,7 @@ def extract_urls_from_blob(text: str, html: str) -> list[str]:
             pass
     for raw in candidates:
         norm = normalize_url(raw)
-        if norm and norm not in seen:
+        if norm and not is_skippable_asset(norm) and norm not in seen:
             seen.add(norm)
             found.append(norm)
         if len(found) >= MAX_URLS_PER_MAIL:
@@ -608,8 +632,8 @@ async def analyze_imap_inbox():
         raise HTTPException(status_code=500, detail=f"IMAP bağlantı veya analiz hatası: {str(e)}")
 
     client = get_client()
-    analyzed = []
-    for m in mails:
+
+    async def enrich_mail(m: dict) -> dict:
         url_results = []
         # URL'leri paralel tara
         if m.get("urls"):
@@ -617,12 +641,15 @@ async def analyze_imap_inbox():
         att_results = []
         if m.get("attachments"):
             att_results = list(await asyncio.gather(*[enrich_attachment_vt(client, a) for a in m["attachments"]]))
-        analyzed.append({
+        return {
             "subject": m.get("subject", "Bilinmiyor"),
             "from": m.get("from", "Bilinmiyor"),
             "urls_found": url_results,
             "attachments": att_results,
-        })
+        }
+
+    # Mailleri de paralel zenginleştir (seri değil)
+    analyzed = list(await asyncio.gather(*[enrich_mail(m) for m in mails]))
 
     return {
         "status": "success",
@@ -774,6 +801,8 @@ async def ai_chat(request: Request, body: ChatRequest):
         user_text = body.message.strip()
     reply = await call_openrouter(user_text)
     clean, risk = parse_ai_reply(reply)
+    if len(clean) > 1500:
+        clean = clean[:1500].rstrip() + "…"
     return {"status": "success", "reply": clean, "risk": risk, "model": os.getenv("AI_MODEL", AI_MODEL)}
 
 
