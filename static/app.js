@@ -64,6 +64,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 return 'info';
             }
 
+            function statusKey(s) {
+                const t = String(s || '').toLowerCase();
+                if (t.indexOf('malicious') >= 0 || t.indexOf('zararl') >= 0) return 'malicious';
+                if (t.indexOf('suspicious') >= 0 || t.indexOf('şüpheli') >= 0 || t.indexOf('supheli') >= 0) return 'suspicious';
+                if (t.indexOf('clean') >= 0 || t.indexOf('temiz') >= 0 || t.indexOf('tehdit kaydı yok') >= 0) return 'clean';
+                return 'unknown';
+            }
+
+            const DOT_COLOR = { malicious: '#a02c22', suspicious: '#8a5f0e', clean: '#2c6735', unknown: '#8b8880' };
+
+            function engineTableHtml(rows) {
+                let html = '<table class="eng-table"><tbody>';
+                rows.forEach(r => {
+                    const k = statusKey(r[1]);
+                    html += '<tr><td><span class="eng-dot" style="background:' + DOT_COLOR[k] + '"></span>' + escapeHtml(r[0]) + '</td>'
+                        + '<td>' + escapeHtml(r[1] || '-') + '</td></tr>';
+                });
+                return html + '</tbody></table>';
+            }
+
+            function vtBarHtml(stats) {
+                stats = stats || {};
+                const m = Number(stats.malicious || 0), s = Number(stats.suspicious || 0);
+                const c = Number(stats.harmless || 0), u = Number(stats.undetected || 0);
+                const total = m + s + c + u;
+                if (!total) return '';
+                const seg = (v, color) => v > 0
+                    ? '<div style="width:' + (v / total * 100).toFixed(1) + '%;background:' + color + '"></div>' : '';
+                return '<div class="rb-wrap"><div class="rb-track">'
+                    + seg(m, DOT_COLOR.malicious) + seg(s, DOT_COLOR.suspicious)
+                    + seg(c, DOT_COLOR.clean) + seg(u, DOT_COLOR.unknown)
+                    + '</div><div class="rb-label">VT: ' + m + ' zararlı / ' + s + ' şüpheli / ' + c + ' temiz / ' + u + ' bilinmiyor</div></div>';
+            }
+
+            function riskBarHtml(risk) {
+                const p = Math.max(0, Math.min(100, Math.round(Number(risk) || 0)));
+                const color = p >= 70 ? DOT_COLOR.malicious : (p >= 40 ? DOT_COLOR.suspicious : DOT_COLOR.clean);
+                return '<div class="rb-wrap"><div class="rb-track">'
+                    + '<div style="width:' + p + '%;background:' + color + '"></div>'
+                    + '</div><div class="rb-label">AI risk skoru: ' + p + '/100</div></div>';
+            }
+
             function fmtStats(stats) {
                 stats = stats || {};
                 return 'Zararlı=' + escapeHtml(stats.malicious != null ? stats.malicious : 0)
@@ -206,7 +248,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     + '<strong>VT ID:</strong> ' + escapeHtml(data.vt_analysis_id || vt.analysis_id || 'Yok') + '<br>'
                     + '<strong>URLhaus:</strong> ' + escapeHtml(uh.status || '') + ' - ' + escapeHtml(uh.detail || '') + '<br>'
                     + '<strong>AbuseIPDB (' + escapeHtml(data.ip || abuse.ip || '') + '):</strong> ' + escapeHtml(abuse.status || '') + '<br>'
-                    + '<strong>Pulsedive:</strong> ' + escapeHtml(pd.status || pd.risk || '');
+                    + '<strong>Pulsedive:</strong> ' + escapeHtml(pd.status || pd.risk || '')
+                    + '<br><strong>Motor Tablosu:</strong>' + engineTableHtml([
+                        ['VirusTotal', String(vt.verdict || vt.status || 'unknown')],
+                        ['URLhaus', String(uh.status || 'unknown')],
+                        ['AbuseIPDB', String(abuse.status || 'unknown')],
+                        ['Pulsedive', String(pd.status || pd.risk || 'unknown')]
+                    ])
+                    + vtBarHtml(vt.stats);
             }
 
             function renderImapResult(data) {
@@ -303,12 +352,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                 + '<strong>Computed SHA-256:</strong> <span style="font-family: monospace; font-size: 10px;">' + escapeHtml(data.file_hash) + '</span>'
                                 + '<button class="copy-btn" data-copy="' + escapeHtml(data.file_hash) + '">Kopyala</button><br>'
                                 + '<strong>Status:</strong> ' + escapeHtml(data.message) + '<br>'
-                                + '<strong>Action:</strong> ' + escapeHtml(data.action));
+                                + '<strong>Action:</strong> ' + escapeHtml(data.action)
+                                + vtBarHtml(data.stats));
                         } else {
                             scanContext = Object.assign({ type: 'imap' }, data);
                             showFeedback('success', 'IMAP Polling Complete', renderImapResult(data));
                         }
                         updateAiContextLine();
+                        autoAnalyze();
                     } else {
                         let msg = data.detail || 'API failure.';
                         if (Array.isArray(msg)) {
@@ -335,34 +386,78 @@ document.addEventListener('DOMContentLoaded', () => {
                 return div;
             }
 
+            let aiBusy = false;
+
+            async function askAi(text, ctx) {
+                const response = await fetch('/analyze/ai-chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text, context: ctx || null })
+                });
+                let data = {};
+                try { data = await response.json(); } catch (e) { data = {}; }
+                if (!response.ok) {
+                    let msg = data.detail || 'AI hatası.';
+                    if (Array.isArray(msg)) msg = msg.map(d => d.msg || JSON.stringify(d)).join('; ');
+                    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+                }
+                return data;
+            }
+
+            function addRiskMeter(msgDiv, risk) {
+                const p = Math.max(0, Math.min(100, Math.round(Number(risk) || 0)));
+                const color = p >= 70 ? '#a02c22' : (p >= 40 ? '#8a5f0e' : '#2c6735');
+                const wrap = document.createElement('div');
+                wrap.className = 'rb-wrap';
+                const track = document.createElement('div');
+                track.className = 'rb-track';
+                const fill = document.createElement('div');
+                fill.style.width = p + '%';
+                fill.style.background = color;
+                track.appendChild(fill);
+                const label = document.createElement('div');
+                label.className = 'rb-label';
+                label.textContent = 'AI risk skoru: ' + p + '/100';
+                wrap.appendChild(track);
+                wrap.appendChild(label);
+                msgDiv.appendChild(wrap);
+                aiMessages.scrollTop = aiMessages.scrollHeight;
+            }
+
+            async function autoAnalyze() {
+                if (!aiInclude || !aiInclude.checked || aiBusy || !scanContext) return;
+                aiBusy = true;
+                aiSend.disabled = true;
+                const pending = addChatMsg('assistant', 'Otomatik analiz yapılıyor...');
+                try {
+                    const data = await askAi('Bu sonucu kısaca yorumla.', scanContext);
+                    pending.textContent = data.reply || '(boş cevap)';
+                    if (data.risk != null) addRiskMeter(pending, data.risk);
+                } catch (e) {
+                    pending.textContent = 'Otomatik analiz yapılamadı: ' + (e.message || 'hata');
+                } finally {
+                    aiBusy = false;
+                    aiSend.disabled = false;
+                    aiMessages.scrollTop = aiMessages.scrollHeight;
+                }
+            }
+
             async function sendChat() {
                 const text = aiInput.value.trim();
-                if (!text || aiSend.disabled) return;
+                if (!text || aiSend.disabled || aiBusy) return;
                 addChatMsg('user', text);
                 aiInput.value = '';
+                aiBusy = true;
                 aiSend.disabled = true;
                 const pending = addChatMsg('assistant', 'Yazıyor...');
                 try {
-                    const response = await fetch('/analyze/ai-chat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            message: text,
-                            context: (aiInclude && aiInclude.checked) ? scanContext : null
-                        })
-                    });
-                    let data = {};
-                    try { data = await response.json(); } catch (e) { data = {}; }
-                    if (response.ok) {
-                        pending.textContent = data.reply || '(boş cevap)';
-                    } else {
-                        let msg = data.detail || 'AI hatası.';
-                        if (Array.isArray(msg)) msg = msg.map(d => d.msg || JSON.stringify(d)).join('; ');
-                        pending.textContent = 'Hata: ' + msg;
-                    }
+                    const data = await askAi(text, (aiInclude && aiInclude.checked) ? scanContext : null);
+                    pending.textContent = data.reply || '(boş cevap)';
+                    if (data.risk != null) addRiskMeter(pending, data.risk);
                 } catch (e) {
-                    pending.textContent = 'Hata: AI servisine ulaşılamadı.';
+                    pending.textContent = 'Hata: ' + (e.message || 'AI servisine ulaşılamadı.');
                 } finally {
+                    aiBusy = false;
                     aiSend.disabled = false;
                     aiMessages.scrollTop = aiMessages.scrollHeight;
                 }

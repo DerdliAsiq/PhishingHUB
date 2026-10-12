@@ -29,7 +29,7 @@ def test_ai_no_key_503(monkeypatch):
 def test_ai_success_mock(monkeypatch):
     async def fake_call(text: str) -> str:
         assert "<scan>" in text
-        return "mock cevap"
+        return "Verdict: temiz\nRISK: 12"
     monkeypatch.setenv("OPENROUTER_API_KEY", "dummy")
     monkeypatch.setattr(main, "OPENROUTER_API_KEY", "dummy")
     monkeypatch.setattr(main, "call_openrouter", fake_call)
@@ -42,7 +42,18 @@ def test_ai_success_mock(monkeypatch):
                     "abuseipdb": {}, "pulsedive": {}},
     })
     assert r.status_code == 200
-    assert r.json()["reply"] == "mock cevap"
+    assert r.json()["reply"] == "Verdict: temiz"
+    assert r.json()["risk"] == 12
+
+
+def test_ai_reply_parse():
+    clean, risk = main.parse_ai_reply("kısa yorum\nRISK: 85")
+    assert clean == "kısa yorum"
+    assert risk == 85
+    clean2, risk2 = main.parse_ai_reply("RISK yok")
+    assert risk2 is None
+    clean3, risk3 = main.parse_ai_reply("x\nRISK: 250")
+    assert risk3 == 100
 
 
 def test_ai_rate_limit(monkeypatch):
