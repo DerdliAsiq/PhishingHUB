@@ -69,6 +69,6 @@ self.onmessage = async e => {
         }
         self.postMessage({ hash: hash.digest() });
     } catch {
-        self.postMessage({ error: 'Dosya okunamadı.' });
+        self.postMessage({ error: 'Fayl oxunmadı.' });
     }
 };
