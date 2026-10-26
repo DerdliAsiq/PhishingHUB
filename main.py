@@ -185,34 +185,6 @@ def stats_verdict(stats: dict | None) -> str:
     return "unknown"
 
 
-def compute_overall_verdict(vt: dict, urlhaus: dict, abuse: dict, pulsedive: dict) -> str:
-    vt_stats = (vt or {}).get("stats") or {}
-    try:
-        if int(vt_stats.get("malicious", 0)) > 0:
-            return "malicious"
-    except Exception:
-        pass
-    if (urlhaus or {}).get("status") == "malicious":
-        return "malicious"
-    try:
-        if int(vt_stats.get("suspicious", 0)) > 0:
-            return "suspicious"
-    except Exception:
-        pass
-    risk = str((pulsedive or {}).get("risk", "")).lower()
-    if risk in ("high", "medium"):
-        return "suspicious"
-    try:
-        score = abuse.get("score")
-        if score is not None and int(score) >= 50:
-            return "suspicious"
-    except Exception:
-        pass
-    if vt.get("status") == "error" and urlhaus.get("status") == "error":
-        return "unknown"
-    return "clean"
-
-
 def is_private_ip(ip_str: str) -> bool:
     try:
         ip = ipaddress.ip_address(ip_str)
@@ -434,27 +406,6 @@ async def fetch_pulsedive(client: httpx.AsyncClient, domain: str) -> dict:
         return {"risk": risk, "status": f"Risk seviyesi: {risk.upper()}"}
     except Exception:
         return {"risk": "unknown", "status": "Sorgu hatası"}
-
-
-async def check_url_intelligence(target_url: str) -> dict:
-    client = get_client()
-    domain = extract_domain(target_url)
-    vt_task = fetch_vt_verdict(client, target_url)
-    urlhaus_task = fetch_urlhaus(client, target_url)
-    pulsedive_task = fetch_pulsedive(client, domain)
-    dns_task = resolve_ip(domain)
-    vt_res, urlhaus_res, pulsedive_res, ip_addr = await asyncio.gather(vt_task, urlhaus_task, pulsedive_task, dns_task)
-    abuse_res = await fetch_abuseipdb(client, ip_addr)
-    verdict = compute_overall_verdict(vt_res, urlhaus_res, abuse_res, pulsedive_res)
-    return {
-        "url": target_url,
-        "verdict": verdict,
-        "virustotal": vt_res,
-        "urlhaus": urlhaus_res,
-        "ip": ip_addr or "IP Yok",
-        "abuseipdb": abuse_res,
-        "pulsedive": pulsedive_res,
-    }
 
 
 async def vt_file_lookup(client: httpx.AsyncClient, file_hash: str) -> dict:
