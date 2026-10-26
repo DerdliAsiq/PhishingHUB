@@ -10,10 +10,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="/static/styles.css">
 </head>
-
 <body>
     <div class="site-shell">
         <header class="site-header">
@@ -38,13 +37,13 @@
                     <div class="eyebrow"><div class="eyebrow-line"></div> PASSIVE INTELLIGENCE</div>
                     <h1>Detect malicious intent <em>before execution.</em></h1>
                     <p class="hero-lead">PhishingHUB acts as a secure airgap for suspicious links, files, and incoming mailboxes. Analyzed in isolation, designed to keep credentials safe.</p>
-                    
+
                     <div class="hero-facts">
                         <div><div class="fact-mark">✓</div> Memory-Safe File Parsing</div>
                         <div><div class="fact-mark">✓</div> 70+ AV Engines (VirusTotal)</div>
                         <div><div class="fact-mark">✓</div> Automated IMAP Mail Scanning</div>
                     </div>
-                    
+
                     <div class="hero-signature">SYSTEM ARCHITECTURE: FASTAPI ASYNC STREAM <div class="signature-rule"></div></div>
                 </div>
 
@@ -54,11 +53,11 @@
                             <div><span class="section-kicker">ANALYSIS MODULE</span><h2>Threat Scanner</h2></div>
                             <div class="workspace-index">MOD-01</div>
                         </div>
-                        
+
                         <div class="mode-tabs">
                             <button class="mode-tab active" id="tab-url">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                    <path d="M10 13a5 5 0 0 0 7.54 .54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                                     <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                                 </svg> URL Scan
                             </button>
@@ -76,18 +75,19 @@
                                 </svg> IMAP Inbox
                             </button>
                         </div>
-                        
-                        <!-- URL INPUT UI -->
+
+                        <!-- URL INPUT UI (tekli + toplu) -->
                         <div class="input-stack" id="ui-url">
-                            <label class="input-label" for="target-url">Target Address</label>
+                            <label class="input-label" for="target-url">Target Address(es)</label>
                             <div class="url-input-wrap">
                                 <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line>
                                     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                                 </svg>
-                                <input type="text" id="target-url" placeholder="https://suspicious-link.com/invoice.pdf" autocomplete="off" maxlength="2048" />
+                                <textarea id="target-url" placeholder="https://suspicious-link.com/invoice.pdf
+https://another-link.example/x" autocomplete="off" maxlength="65536" rows="3"></textarea>
                             </div>
-                            <p class="field-help">URLs are submitted securely via multi-engine intelligence.</p>
+                            <p class="field-help">Her satıra bir URL yazın (maks. 10 benzersiz). Tek URL tekli tarama; birden fazla toplu tarama olarak işlenir.</p>
                         </div>
 
                         <!-- FILE UPLOAD UI -->
@@ -106,18 +106,18 @@
                                 </div>
                                 <input type="file" id="file-input" style="display: none;">
                             </div>
-                            <p class="field-help">Files are chunk-streamed to calculate SHA-256 securely.</p>
+                            <p class="field-help">Dosya istemci tarafında 2 MiB’lik parçalarla SHA-256’lanır; dosya içeriği sunucuya gitmez, yalnız hash gönderilir.</p>
                         </div>
 
                         <!-- IMAP INBOX UI -->
                         <div class="input-stack" id="ui-imap" style="display: none;">
                             <label class="input-label">IMAP Mailbox Polling</label>
                             <div style="padding: 16px; border: 1px solid #bbb9b1; background: #fbfaf6; font-size: 12px; color: var(--muted); line-height: 1.5;">
-                                This module triggers backend polling to fetch unread emails via IMAP (Port 993), extracts embedded links, and runs them through multi-engine intelligence.
+                                This module triggers backend polling to fetch unread emails via IMAP (Port 993, READONLY + BODY.PEEK), extracts embedded links, and runs them through multi-engine intelligence.
                             </div>
                             <p class="field-help">Ensure environment variables (IMAP_USER, IMAP_PASS) are active.</p>
                         </div>
-                        
+
                         <button class="analyze-button" id="scan-btn">
                             INITIATE SCAN
                             <div class="analyze-icon">
@@ -127,9 +127,17 @@
                                 </svg>
                             </div>
                         </button>
-                        
+                        <button class="analyze-button analyze-cancel" id="cancel-scan" style="display:none;margin-left:8px;">
+                            Ləğv et
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                        <p id="scan-progress" class="field-help" style="margin-top:8px;"></p>
+
                         <div id="result-box" style="display: none;" aria-live="polite"></div>
-                        
+
                         <div class="privacy-note">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
@@ -137,6 +145,56 @@
                             <span>Traffic is dynamically routed through Threat Intelligence APIs.</span>
                         </div>
                     </div>
+                </div>
+            </section>
+
+            <!-- EVIDENCE & TRIAGE DASHBOARD -->
+            <section class="ai-section" id="dashboard" hidden aria-live="polite">
+                <div class="workspace-card ai-card">
+                    <div class="workspace-topline">
+                        <div><span class="section-kicker">EVIDENCE & TRIAGE</span><h2>Analiz Sonuçları</h2></div>
+                        <div class="dashboard-actions">
+                            <button id="export-json" class="copy-btn">JSON</button>
+                            <button id="export-csv" class="copy-btn">IOC · CSV</button>
+                            <button id="copy-iocs" class="copy-btn">IOC Kopyala</button>
+                            <button id="print-report" class="copy-btn">PDF / Çap</button>
+                        </div>
+                    </div>
+                    <p id="report-meta" class="field-help"></p>
+                    <div class="dashboard-metrics" id="report-metrics"></div>
+                    <div class="dashboard-grid">
+                        <article class="dashboard-panel">
+                            <h3>Nəticələrin Bölgüsü</h3>
+                            <div id="verdict-chart"></div>
+                        </article>
+                        <article class="dashboard-panel">
+                            <h3>Antivirus Motoru Sonuçları</h3>
+                            <div id="engine-chart"></div>
+                            <p class="field-help">“Aşkarlanmayıb” temelli temizlik garantisi değildir. Toplu tarama sırasında motorların raporlarıyla ilgili sayıların toplamıdır.</p>
+                        </article>
+                    </div>
+                    <div class="dashboard-panel">
+                        <h3>Prioritet ve Kaynaklar</h3>
+                        <div class="table-scroll">
+                            <table class="triage-table">
+                                <thead>
+                                    <tr><th>Hedef</th><th>Öncelik</th><th>Sonuç</th><th>VirusTotal</th><th>URLhaus</th><th>AbuseIPDB</th><th>Pulsedive</th></tr>
+                                </thead>
+                                <tbody id="triage-rows"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="dashboard-grid">
+                        <article class="dashboard-panel">
+                            <h3>Phishing Göstergeleri ve Kanıtlar</h3>
+                            <div id="findings"></div>
+                        </article>
+                        <article class="dashboard-panel">
+                            <h3>Öneriler (Sonraki Adımlar)</h3>
+                            <div id="next-steps"></div>
+                        </article>
+                    </div>
+                    <p class="field-help">Öncelik araştırma sırasını gösterir, zararlılık yüzdesi değildir. Lokal gösterici tek başına zararlılığı teyit etmez. Hedef URL doğrudan açılmaz.</p>
                 </div>
             </section>
 

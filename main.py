@@ -17,8 +17,12 @@ import ipaddress
 import logging
 import os
 import re
+import secrets
 import socket
 import time
+from collections import deque
+from datetime import datetime, timezone
+from difflib import SequenceMatcher
 
 try:
     from dotenv import load_dotenv
@@ -28,6 +32,7 @@ except ImportError:
     pass
 
 import httpx
+import tldextract
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -35,6 +40,7 @@ BASE_DIR = Path(__file__).resolve().parent
 VT_API_KEY = os.getenv("VT_API_KEY")
 ABUSEIPDB_API_KEY = os.getenv("ABUSEIPDB_API_KEY")
 PULSEDIVE_API_KEY = os.getenv("PULSEDIVE_API_KEY")
+URLHAUS_AUTH_KEY = os.getenv("URLHAUS_AUTH_KEY")
 
 IMAP_SERVER = os.getenv("IMAP_SERVER", "imap.gmail.com")
 IMAP_USER = os.getenv("IMAP_USER", "")
@@ -61,6 +67,19 @@ URL_RE = re.compile(r'https?://[^\s<>"\']+|www\.[^\s<>"\']+', re.IGNORECASE)
 HREF_RE = re.compile(r'href\s*=\s*["\'](https?://[^"\']+|www\.[^"\']+)["\']', re.IGNORECASE)
 
 _http_client: httpx.AsyncClient | None = None
+
+# --- VirusTotal lokal bütçe + cache ---
+_vt_hits = deque()
+_vt_daily = deque()
+_report_cache = {}
+VT_REQUESTS_PER_MINUTE = 4
+VT_REQUESTS_PER_DAY = 500
+CACHE_SECONDS = 600
+_report_cache_max = 256
+_intel_semaphore = asyncio.Semaphore(3)
+
+# Offline Public Suffix snapshot: no network request for suffix list.
+_suffix = tldextract.TLDExtract(suffix_list_urls=(), include_psl_private_domains=True)
 
 
 @asynccontextmanager
@@ -150,12 +169,48 @@ def is_skippable_asset(url: str) -> bool:
 def extract_domain(target_url: str) -> str:
     try:
         parsed = urlparse(target_url)
-        domain = parsed.netloc or parsed.path.split("/")[0]
-        if ":" in domain:
-            domain = domain.split(":")[0]
-        return domain.strip().lower()
+        return (parsed.hostname or "").strip().lower()
     except Exception:
         return ""
+
+
+def stats_verdict(stats: dict | None) -> str:
+    stats = stats or {}
+    if stats.get("malicious", 0) > 0:
+        return "malicious"
+    if stats.get("suspicious", 0) > 0:
+        return "suspicious"
+    if stats.get("harmless", 0) + stats.get("undetected", 0) > 0:
+        return "clean"
+    return "unknown"
+
+
+def compute_overall_verdict(vt: dict, urlhaus: dict, abuse: dict, pulsedive: dict) -> str:
+    vt_stats = (vt or {}).get("stats") or {}
+    try:
+        if int(vt_stats.get("malicious", 0)) > 0:
+            return "malicious"
+    except Exception:
+        pass
+    if (urlhaus or {}).get("status") == "malicious":
+        return "malicious"
+    try:
+        if int(vt_stats.get("suspicious", 0)) > 0:
+            return "suspicious"
+    except Exception:
+        pass
+    risk = str((pulsedive or {}).get("risk", "")).lower()
+    if risk in ("high", "medium"):
+        return "suspicious"
+    try:
+        score = abuse.get("score")
+        if score is not None and int(score) >= 50:
+            return "suspicious"
+    except Exception:
+        pass
+    if vt.get("status") == "error" and urlhaus.get("status") == "error":
+        return "unknown"
+    return "clean"
 
 
 def is_private_ip(ip_str: str) -> bool:
@@ -175,6 +230,50 @@ def is_private_ip(ip_str: str) -> bool:
 
 def vt_url_id(target_url: str) -> str:
     return base64.urlsafe_b64encode(target_url.encode()).decode().strip("=")
+
+
+def reserve_vt_request() -> bool:
+    now = time.monotonic()
+    while _vt_hits and now - _vt_hits[0] >= 60:
+        _vt_hits.popleft()
+    while _vt_daily and now - _vt_daily[0] >= 86400:
+        _vt_daily.popleft()
+    if len(_vt_hits) >= VT_REQUESTS_PER_MINUTE or len(_vt_daily) >= VT_REQUESTS_PER_DAY:
+        return False
+    _vt_hits.append(now)
+    _vt_daily.append(now)
+    return True
+
+
+async def cached_vt_report(client: httpx.AsyncClient, kind: str, identifier: str) -> dict:
+    key = (kind, identifier)
+    now = time.monotonic()
+    cached = _report_cache.get(key)
+    if cached and now - cached[0] < CACHE_SECONDS:
+        return {**cached[1], "cached": True}
+    if not VT_API_KEY:
+        return {"status": "not_configured", "verdict": "unknown", "stats": {}, "detail": "VT_API_KEY yapılandırılmamış (env)."}
+    if not reserve_vt_request():
+        return {"status": "rate_limited", "verdict": "unknown", "stats": {}, "detail": "Lokal VT limiti: 4/dakika, 500/gün. Bekleyip tekrar deneyin."}
+    try:
+        r = await client.get(f"https://www.virustotal.com/api/v3/{kind}/{identifier}", headers={"x-apikey": VT_API_KEY})
+        if r.status_code == 404:
+            result = {"status": "not_found", "stats": {}, "verdict": "unknown", "detail": "VT'de kayıt yok; temizlik teyidi vermez."}
+        elif r.status_code == 429:
+            return {"status": "rate_limited", "stats": {}, "verdict": "unknown", "detail": "VirusTotal kota aşıldı (429)."}
+        elif r.status_code != 200:
+            return {"status": "error", "stats": {}, "verdict": "unknown", "detail": f"VirusTotal HTTP {r.status_code}"}
+        else:
+            attrs = r.json().get("data", {}).get("attributes", {})
+            stats = attrs.get("last_analysis_stats") or {}
+            result = {"status": "completed", "stats": stats, "verdict": stats_verdict(stats),
+                      "last_analysis_date": attrs.get("last_analysis_date"), "detail": "Mevcut hesabat; yeni analiz başlatılmadı."}
+        if len(_report_cache) >= _report_cache_max:
+            _report_cache.pop(next(iter(_report_cache)))
+        _report_cache[key] = (time.monotonic(), result)
+        return result
+    except (httpx.HTTPError, ValueError, TypeError):
+        return {"status": "error", "stats": {}, "verdict": "unknown", "detail": "VirusTotal yanıtı alınamadı"}
 
 
 def compute_overall_verdict(vt: dict, urlhaus: dict, abuse: dict, pulsedive: dict) -> str:
@@ -210,8 +309,10 @@ async def fetch_vt_verdict(client: httpx.AsyncClient, target_url: str) -> dict:
         return {"status": "error", "error": "VT_API_KEY yapılandırılmamış (env).", "stats": {}, "verdict": "unknown", "analysis_id": None}
     headers = {"accept": "application/json", "x-apikey": VT_API_KEY}
     analysis_id = None
-    # 1) Submit URL
+    # 1) Submit URL (1 VT bütçesi)
     try:
+        if not reserve_vt_request():
+            return {"status": "rate_limited", "error": "Lokal VT limiti dolu (4/dk, 500/gün).", "stats": {}, "verdict": "unknown", "analysis_id": None}
         r = await client.post(
             "https://www.virustotal.com/api/v3/urls",
             data={"url": target_url},
@@ -220,22 +321,23 @@ async def fetch_vt_verdict(client: httpx.AsyncClient, target_url: str) -> dict:
         if r.status_code == 401:
             return {"status": "error", "error": "VirusTotal: geçersiz API anahtarı (401).", "stats": {}, "verdict": "unknown", "analysis_id": None}
         if r.status_code == 429:
-            return {"status": "error", "error": "VirusTotal: kota aşıldı (429).", "stats": {}, "verdict": "unknown", "analysis_id": None}
+            return {"status": "rate_limited", "error": "VirusTotal: kota aşıldı (429).", "stats": {}, "verdict": "unknown", "analysis_id": None}
         if r.status_code == 200:
             try:
                 analysis_id = r.json()["data"]["id"]
             except Exception:
                 analysis_id = None
         else:
-            # Submit başarısızsa direkt url lookup fallback'ına git
             analysis_id = None
     except Exception as e:
         return {"status": "error", "error": f"VirusTotal submit hatası: {type(e).__name__}", "stats": {}, "verdict": "unknown", "analysis_id": None}
 
-    # 2) Poll analysis
+    # 2) Poll analysis (en fazla 2 kez, her biri 1 VT bütçesi)
     if analysis_id:
-        for _ in range(7):
+        for _ in range(2):
             try:
+                if not reserve_vt_request():
+                    break
                 pr = await client.get(f"https://www.virustotal.com/api/v3/analyses/{analysis_id}", headers=headers)
                 if pr.status_code == 200:
                     data = pr.json().get("data", {}).get("attributes", {})
@@ -256,24 +358,9 @@ async def fetch_vt_verdict(client: httpx.AsyncClient, target_url: str) -> dict:
                 pass
             await asyncio.sleep(2)
 
-    # 3) Fallback: url lookup
+    # 3) Fallback: url lookup (1 VT bütçesi, cache'li)
     try:
-        uid = vt_url_id(target_url)
-        lr = await client.get(f"https://www.virustotal.com/api/v3/urls/{uid}", headers=headers)
-        if lr.status_code == 200:
-            attrs = lr.json().get("data", {}).get("attributes", {})
-            stats = attrs.get("last_analysis_stats", {}) or {}
-            verdict = "clean"
-            try:
-                if int(stats.get("malicious", 0)) > 0:
-                    verdict = "malicious"
-                elif int(stats.get("suspicious", 0)) > 0:
-                    verdict = "suspicious"
-            except Exception:
-                pass
-            return {"status": "completed", "stats": stats, "verdict": verdict, "analysis_id": analysis_id}
-        if lr.status_code == 404:
-            return {"status": "completed", "stats": {}, "verdict": "unknown", "analysis_id": analysis_id, "note": "VT'de kayıt yok."}
+        return await cached_vt_report(client, "urls", vt_url_id(target_url))
     except Exception:
         pass
     return {"status": "timeout", "error": "VT analizi tamamlanamadı (timeout).", "stats": {}, "verdict": "unknown", "analysis_id": analysis_id}
@@ -281,13 +368,18 @@ async def fetch_vt_verdict(client: httpx.AsyncClient, target_url: str) -> dict:
 
 async def fetch_urlhaus(client: httpx.AsyncClient, target_url: str) -> dict:
     try:
-        r = await client.post("https://urlhaus-api.abuse.ch/v1/url/", data={"url": target_url})
+        headers = {}
+        if URLHAUS_AUTH_KEY:
+            headers["Auth-Key"] = URLHAUS_AUTH_KEY
+        r = await client.post("https://urlhaus-api.abuse.ch/v1/url/", data={"url": target_url}, headers=headers)
         if r.status_code != 200:
             return {"status": "error", "detail": f"HTTP {r.status_code}"}
         data = r.json()
         if data.get("query_status") == "ok":
             return {"status": "malicious", "detail": str(data.get("url_status", "listed"))}
-        return {"status": "clean", "detail": "Tehdit kaydı yok"}
+        if data.get("query_status") == "no_results":
+            return {"status": "not_found", "detail": "Bazında kayıt yok; temizlik teyidi vermez."}
+        return {"status": "unknown", "detail": "Sorgu ile ilgili doğrulanmış bilgi yok."}
     except Exception as e:
         return {"status": "error", "detail": f"{type(e).__name__}"}
 
@@ -296,7 +388,7 @@ async def resolve_ip(domain: str) -> str | None:
     if not domain:
         return None
     try:
-        infos = await asyncio.to_thread(socket.getaddrinfo, domain, None)
+        infos = await asyncio.wait_for(asyncio.to_thread(socket.getaddrinfo, domain, None), timeout=5)
         if infos:
             return infos[0][4][0]
         return None
@@ -487,17 +579,17 @@ def parse_email_bytes(raw_bytes: bytes) -> dict:
 
 
 def fetch_imap_mails_sync() -> list[dict]:
-    mail = imaplib.IMAP4_SSL(IMAP_SERVER)
+    mail = imaplib.IMAP4_SSL(IMAP_SERVER, timeout=15)
     try:
         mail.login(IMAP_USER, IMAP_PASS)
-        mail.select("INBOX")
+        mail.select("INBOX", readonly=True)
         status, messages = mail.search(None, "UNSEEN")
         if status != "OK":
             raise RuntimeError("E-posta kutusu taranamadı.")
         nums = (messages[0].split() if messages and messages[0] else [])[:MAX_MAILS]
         out: list[dict] = []
         for num in nums:
-            res, msg_data = mail.fetch(num, "(RFC822)")
+            res, msg_data = mail.fetch(num, "(BODY.PEEK[])")
             if res != "OK":
                 continue
             for response_part in msg_data:
@@ -515,19 +607,8 @@ def fetch_imap_mails_sync() -> list[dict]:
 async def enrich_attachment_vt(client: httpx.AsyncClient, att: dict) -> dict:
     h = att.get("sha256")
     if not h:
-        return {**att, "vt": {"status": "skipped", "detail": att.get("note", "hash yok")}}
-    if not VT_API_KEY:
-        return {**att, "vt": {"status": "error", "detail": "VT_API_KEY yok"}}
-    try:
-        r = await client.get(f"https://www.virustotal.com/api/v3/files/{h}", headers={"accept": "application/json", "x-apikey": VT_API_KEY})
-        if r.status_code == 200:
-            stats = r.json().get("data", {}).get("attributes", {}).get("last_analysis_stats", {})
-            return {**att, "vt": {"status": "completed", "stats": stats}}
-        if r.status_code == 404:
-            return {**att, "vt": {"status": "clean", "detail": "VT'de kayıt yok"}}
-        return {**att, "vt": {"status": "error", "detail": f"HTTP {r.status_code}"}}
-    except Exception as e:
-        return {**att, "vt": {"status": "error", "detail": type(e).__name__}}
+        return {**att, "vt": {"status": "skipped", "verdict": "unknown", "detail": att.get("note", "hash yok")}}
+    return {**att, "vt": await cached_vt_report(client, "files", h)}
 
 
 @app.get("/")
@@ -538,6 +619,77 @@ def read_root():
     return FileResponse(str(index_path), headers={"Cache-Control": "public, max-age=300"})
 
 
+BRANDS = {"paypal": "paypal.com", "microsoft": "microsoft.com", "google": "google.com", "apple": "apple.com"}
+
+
+def phishing_findings(target: str) -> list[dict]:
+    p = urlparse(target)
+    host = (p.hostname or "").lower().rstrip(".")
+    ext = _suffix(host)
+    registered = ext.top_domain_under_public_suffix or host
+    findings = []
+
+    def add(code, severity, evidence, explanation):
+        findings.append({"code": code, "severity": severity, "evidence": evidence, "explanation": explanation, "source": "Lokal URL kuralı"})
+
+    if p.username is not None or p.password is not None:
+        add("userinfo", "medium", f"Faktiki hedef: {host}", "@ işaretinden önceki kısım hedef domain değildir.")
+    if any(label.startswith("xn--") for label in host.split(".")):
+        add("punycode", "low", host, "Punycode uluslararası domain olabilir; tek başına zararlılık kanıtı değildir.")
+    try:
+        ipaddress.ip_address(host)
+        add("ip_host", "low", host, "Domain yerine IP adresi kullanılır; ek araştırma gerekebilir.")
+    except ValueError:
+        pass
+    if len(ext.subdomain.split(".")) >= 4 and ext.subdomain:
+        add("deep_subdomain", "low", host, "Çok katmanlı subdomain; tek başına zararlılık kanıtı değildir.")
+    normalized = ext.domain.translate(str.maketrans({"0": "o", "1": "l", "3": "e", "5": "s"}))
+    for brand, official in BRANDS.items():
+        if registered == official:
+            continue
+        if official in ext.subdomain or brand in ext.subdomain.split("."):
+            add("brand_subdomain", "medium", f"{host}; ana domain: {registered}", f"{brand} adı subdomainde; bu {official} domaini değildir.")
+        elif normalized == brand or (len(ext.domain) >= 5 and SequenceMatcher(None, ext.domain, brand).ratio() >= 0.85):
+            add("brand_similarity", "medium", f"{registered} ↔ {official}", "Kısıtlı marka benzerliği listesiyle benzerlik var; sahiplik ve zararlılık teyit edilmedi.")
+    return findings
+
+
+def priority_for(verdict: str, findings: list[dict]) -> str:
+    if verdict == "malicious":
+        return "high"
+    if verdict == "suspicious" or any(f["severity"] == "medium" for f in findings):
+        return "medium"
+    if verdict == "unknown":
+        return "needs_data"
+    return "low"
+
+
+async def check_url_intelligence(target_url: str) -> dict:
+    async with _intel_semaphore:
+        client = get_client()
+        domain = extract_domain(target_url)
+        vt_task = fetch_vt_verdict(client, target_url)
+        urlhaus_task = fetch_urlhaus(client, target_url)
+        pulsedive_task = fetch_pulsedive(client, domain)
+        dns_task = resolve_ip(domain)
+        vt_res, urlhaus_res, pulsedive_res, ip_addr = await asyncio.gather(vt_task, urlhaus_task, pulsedive_task, dns_task)
+        abuse_res = await fetch_abuseipdb(client, ip_addr)
+        verdict = compute_overall_verdict(vt_res, urlhaus_res, abuse_res, pulsedive_res)
+    findings = phishing_findings(target_url)
+    return {
+        "url": target_url,
+        "verdict": verdict,
+        "findings": findings,
+        "priority": priority_for(verdict, findings),
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "virustotal": vt_res,
+        "urlhaus": urlhaus_res,
+        "ip": ip_addr or "IP Yok",
+        "abuseipdb": abuse_res,
+        "pulsedive": pulsedive_res,
+    }
+
+
 @app.post("/analyze/url")
 async def analyze_phishing_url(request: AnalyzeRequest):
     res = await check_url_intelligence(str(request.url))
@@ -546,6 +698,9 @@ async def analyze_phishing_url(request: AnalyzeRequest):
         "message": "Çoklu istihbarat taraması tamamlandı.",
         "url_scanned": res["url"],
         "verdict": res["verdict"],
+        "findings": res["findings"],
+        "priority": res["priority"],
+        "checked_at": res["checked_at"],
         "virustotal": res["virustotal"],
         "urlhaus": res["urlhaus"],
         "ip": res["ip"],
@@ -590,36 +745,80 @@ async def analyze_uploaded_file(request: Request, file: UploadFile = File(...)):
             pass
 
     file_hash = sha256_hash.hexdigest()
-    client = get_client()
-    try:
-        vt_resp = await vt_file_lookup(client, file_hash)
-        if vt_resp.status_code == 200:
-            stats = vt_resp.json().get("data", {}).get("attributes", {}).get("last_analysis_stats", {})
-            return {
-                "status": "success",
-                "message": "Dosya hash analizi tamamlandı.",
-                "file_hash": file_hash,
-                "file_size": total,
-                "stats": stats,
-                "action": f"Zararlı={stats.get('malicious', 0)}, Temiz={stats.get('harmless', 0)}, Şüpheli={stats.get('suspicious', 0)}",
-            }
-        if vt_resp.status_code == 404:
-            return {
-                "status": "success",
-                "message": "Hash veritabanında bulunamadı.",
-                "file_hash": file_hash,
-                "file_size": total,
-                "action": "VT üzerinde tehdit kaydı algılanmadı.",
-            }
-        if vt_resp.status_code == 401:
-            raise HTTPException(status_code=503, detail="VirusTotal: geçersiz API anahtarı.")
-        if vt_resp.status_code == 429:
-            raise HTTPException(status_code=503, detail="VirusTotal: kota aşıldı, sonra tekrar deneyin.")
-        raise HTTPException(status_code=500, detail=f"VirusTotal API hatası: {vt_resp.status_code}")
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return await file_report(file_hash, total, file.filename or "")
+
+
+class HashRequest(BaseModel):
+    sha256: str = Field(pattern=r"^[a-fA-F0-9]{64}$")
+    filename: str = Field(default="", max_length=255)
+    file_size: int = Field(default=0, ge=0, le=2**53 - 1)
+
+
+async def file_report(sha256: str, size: int, filename: str) -> dict:
+    vt = await cached_vt_report(get_client(), "files", sha256.lower())
+    verdict = vt["verdict"]
+    return {
+        "status": "success",
+        "type": "file",
+        "file_hash": sha256.lower(),
+        "file_size": size,
+        "filename": filename,
+        "stats": vt.get("stats", {}),
+        "virustotal": vt,
+        "verdict": verdict,
+        "priority": priority_for(verdict, []),
+        "findings": [],
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "message": vt.get("detail", "Mevcut hesabat yoklandı."),
+        "action": "Bu hash yoxlamasıdır; dosya icra edilmez ve yeni antivirus analizi başlatılmaz.",
+    }
+
+
+@app.post("/analyze/hash")
+async def analyze_hash(body: HashRequest):
+    return await file_report(body.sha256, body.file_size, body.filename)
+
+
+class BatchRequest(BaseModel):
+    urls: list[str] = Field(min_length=1, max_length=10)
+
+
+@app.post("/analyze/urls")
+async def analyze_urls(body: BatchRequest):
+    unique = []
+    errors = []
+    seen = set()
+    for raw in body.urls:
+        if len(raw) > 2048:
+            errors.append({"input": raw[:100], "detail": "URL 2048 karakterden uzun"})
+            continue
+        try:
+            value = str(AnalyzeRequest(url=raw.strip()).url)
+        except ValueError:
+            errors.append({"input": raw[:100], "detail": "http:// veya https:// ile düzgün URL girin"})
+            continue
+        if value not in seen:
+            seen.add(value)
+            unique.append(value)
+
+    async def one(value):
+        try:
+            return await check_url_intelligence(value)
+        except Exception:
+            return {"url": value, "verdict": "unknown", "priority": "needs_data", "findings": [], "error": "Tarama tamamlanamadı"}
+
+    results = await asyncio.gather(*(one(u) for u in unique))
+    order = {"high": 0, "medium": 1, "needs_data": 2, "low": 3}
+    results.sort(key=lambda r: order[r["priority"]])
+    return {
+        "status": "success",
+        "type": "url",
+        "results": results,
+        "errors": errors,
+        "unique_count": len(unique),
+        "duplicates_removed": len(body.urls) - len(errors) - len(unique),
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 @app.post("/analyze/imap")
@@ -857,6 +1056,10 @@ def health():
     return {
         "status": "ok",
         "vt_configured": bool(os.getenv("VT_API_KEY") or VT_API_KEY),
+        "urlhaus_configured": bool(URLHAUS_AUTH_KEY),
+        "abuseipdb_configured": bool(ABUSEIPDB_API_KEY),
+        "pulsedive_configured": bool(PULSEDIVE_API_KEY),
+        "imap_configured": bool(IMAP_USER and IMAP_PASS),
         "ai_configured": bool(os.getenv("OPENROUTER_API_KEY") or OPENROUTER_API_KEY),
         "ai_model": os.getenv("AI_MODEL", AI_MODEL),
     }

@@ -91,7 +91,8 @@
         .url-input-wrap { display: flex; align-items: center; border: 1px solid #bbb9b1; background: #fbfaf6; transition: border .2s, box-shadow .2s; }
         .url-input-wrap:focus-within { border-color: var(--cobalt); box-shadow: 0 0 0 3px rgba(36,87,230,.1); }
         .input-icon { margin-left: 13px; color: var(--cobalt); }
-        .url-input-wrap input { width: 100%; min-width: 0; padding: 16px 10px; border: 0; outline: 0; color: var(--ink); background: transparent; font: 14px "IBM Plex Mono", monospace; }
+        .url-input-wrap input, .url-input-wrap textarea { width: 100%; min-width: 0; padding: 16px 10px; border: 0; outline: 0; color: var(--ink); background: transparent; font: 14px "IBM Plex Mono", monospace; resize: vertical; }
+        .url-input-wrap textarea { font-family: "IBM Plex Mono", monospace; line-height: 1.5; }
         .url-input-wrap input::placeholder { color: #a8a7a0; }
         
         .field-help { margin: 9px 0 0; color: var(--muted); font-size: 11px; }
@@ -209,4 +210,45 @@
             h1 { font-size: clamp(1.9rem, 11vw, 2.4rem); }
             .workspace-card { padding: 14px; }
             .hero-facts { flex-direction: column; align-items: flex-start; gap: 8px; }
+        }
+
+        /* --- Evidence & Triage Dashboard --- */
+        [hidden] { display: none !important; }
+        #dashboard .workspace-card { padding: 24px; }
+        #dashboard .workspace-topline { justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .dashboard-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .dashboard-actions .copy-btn { padding: 4px 12px; }
+        #report-meta { margin-top: 10px; font-size: 11px; color: var(--muted); }
+        .dashboard-metrics { display: flex; gap: 12px; margin: 16px 0; flex-wrap: wrap; }
+        .dashboard-metric { flex: 1; min-width: 120px; background: #fbfaf6; border: 1px solid var(--line); padding: 12px; text-align: center; border-radius: var(--radius); }
+        .dashboard-metric b { display: block; font-size: 20px; color: var(--ink); }
+        .dashboard-metric span { display: block; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin: 16px 0; }
+        .dashboard-panel { background: #fbfaf6; border: 1px solid var(--line); padding: 14px; border-radius: var(--radius); }
+        .dashboard-panel h3 { font: 600 13px/1.3 "DM Sans", sans-serif; margin: 0 0 10px; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+        .chart-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; font-size: 11px; }
+        .chart-row span { min-width: 150px; }
+        .chart-track { flex: 1; height: 10px; background: #e6e1d6; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+        .chart-fill { height: 100%; }
+        .chart-number { min-width: 28px; text-align: right; font-weight: 700; font-family: "IBM Plex Mono", monospace; }
+        .table-scroll { overflow-x: auto; margin-top: 8px; }
+        .triage-table { width: 100%; border-collapse: collapse; font-size: 11px; background: white; }
+        .triage-table th, .triage-table td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; }
+        .triage-table th { background: #efece5; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: 10px; }
+        .triage-table td.target-cell { font-family: "IBM Plex Mono", monospace; font-size: 10px; word-break: break-all; max-width: 220px; }
+        .priority-high { color: #a02c22; font-weight: 700; }
+        .priority-medium { color: #8a5f0e; font-weight: 700; }
+        .priority-low { color: #2c6735; font-weight: 700; }
+        .priority-needs_data { color: #6f716f; font-weight: 700; }
+        .finding-item { background: white; border: 1px solid var(--line); border-left: 3px solid var(--amber); padding: 10px 12px; margin: 8px 0; border-radius: 6px; font-size: 11px; line-height: 1.5; }
+        .finding-item strong { color: var(--ink); }
+        .finding-item p { margin: 4px 0 0; color: var(--muted); }
+        #findings.empty, #next-steps.empty { color: var(--muted); font-size: 11px; font-style: italic; }
+        .step-item { margin: 6px 0; font-size: 11px; line-height: 1.5; }
+        .ai-context-line { margin-top: 10px; color: var(--muted); font-size: 11px; }
+        @media (max-width: 760px) {
+            .dashboard-metric { min-width: 100%; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .triage-table { font-size: 10px; }
+            .triage-table th, .triage-table td { padding: 4px 6px; }
         }

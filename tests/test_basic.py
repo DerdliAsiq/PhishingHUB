@@ -23,6 +23,12 @@ def test_private_ip_skipped():
     assert main.is_private_ip("8.8.8.8") is False
 
 
+def test_extract_domain_handles_userinfo_and_ipv6():
+    assert main.extract_domain("https://bank.example@other.test:443/x") == "other.test"
+    assert main.extract_domain("http://[2001:db8::1]:80/") == "2001:db8::1"
+    assert main.extract_domain("https://www.example.com/path") == "www.example.com"
+
+
 def test_verdict_logic():
     v = main.compute_overall_verdict(
         {"stats": {"malicious": 2}, "status": "completed"},
