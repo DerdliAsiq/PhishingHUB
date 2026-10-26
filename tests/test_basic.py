@@ -38,12 +38,20 @@ def test_verdict_logic():
     )
     assert v == "malicious"
     v2 = main.compute_overall_verdict(
-        {"stats": {"malicious": 0, "suspicious": 0}, "status": "completed"},
-        {"status": "clean"},
-        {"score": 0},
+        {"stats": {"malicious": 0, "suspicious": 0, "harmless": 40, "undetected": 12}, "status": "completed"},
+        {"status": "not_found"},
+        {"score": 10},
         {"risk": "low"},
     )
     assert v2 == "clean"
+    # sıfır kanıt → unknown ("temiz" iddiası yapılmaz)
+    v3 = main.compute_overall_verdict(
+        {"status": "not_found", "stats": {}},
+        {"status": "not_found"},
+        {"score": None},
+        {"risk": "unknown"},
+    )
+    assert v3 == "unknown"
 
 
 def test_html_entity_unescape():

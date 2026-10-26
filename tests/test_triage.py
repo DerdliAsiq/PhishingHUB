@@ -8,7 +8,7 @@ def test_unknown_is_not_clean():
     assert main.stats_verdict({}) == 'unknown'
     assert main.stats_verdict({'timeout': 9}) == 'unknown'
     assert main.stats_verdict({'undetected': 60}) == 'clean'
-    assert main.compute_overall_verdict({'status': 'error'}, {'status': 'not_found'}, {}, {}) == 'clean'  # V1 kurali: kanit yoksa temiz
+    assert main.compute_overall_verdict({'status': 'error'}, {'status': 'not_found'}, {}, {}) == 'unknown'  # kanit yoksa temiz denmez
 
 
 def test_phishing_evidence_and_official_domains():

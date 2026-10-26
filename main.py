@@ -271,9 +271,17 @@ def compute_overall_verdict(vt: dict, urlhaus: dict, abuse: dict, pulsedive: dic
             return "suspicious"
     except Exception:
         pass
-    if vt.get("status") == "error" and urlhaus.get("status") == "error":
-        return "unknown"
-    return "clean"
+    # Kanıt yoksa "temiz" denmez: gerçek motor verisi / düşük risk / IP skoru gerekir
+    try:
+        if int(vt_stats.get("harmless", 0)) + int(vt_stats.get("undetected", 0)) > 0:
+            return "clean"
+    except Exception:
+        pass
+    if (abuse or {}).get("score") is not None:
+        return "clean"
+    if str((pulsedive or {}).get("risk", "")).lower() == "low":
+        return "clean"
+    return "unknown"
 
 
 async def fetch_vt_verdict(client: httpx.AsyncClient, target_url: str) -> dict:
