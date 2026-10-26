@@ -314,8 +314,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const track = document.createElement('div');
       track.className = 'chart-track';
       const fill = document.createElement('div');
+      fill.className = 'chart-fill';
       fill.style.width = (100 * n / total) + '%';
       fill.style.background = color;
+      fill.style.minWidth = n > 0 ? '3px' : '0';
       track.appendChild(fill);
       const lbl = document.createElement('span');
       lbl.textContent = label;
