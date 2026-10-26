@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function setSelectedFile(f) {
     if (!f) return;
     clearReport();
-    selected = null;
+    selectedFile = null;
     if (!f.size) { fileNameDisplay.textContent = 'Bos dosya kabul edilmez'; fileSizeDisplay.textContent = ''; return; }
     if (f.size > MAX_FILE_SIZE) { showFeedback('error', 'Dogrulama Hatasi', 'Dosya çok büyük (limit 50MB).'); fileInput.value = ''; return; }
     selectedFile = f;
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
   dropZone.addEventListener('click', () => { if (!busy) fileInput.click(); });
   dropZone.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if (!busy) fileInput.click(); } });
   fileInput.addEventListener('change', e => { if (e.target.files.length > 0) setSelectedFile(e.target.files[0]); });
-  ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); if (!busy) dropZone.classList.add('dragging'); }));
+  ['dragover', 'dragenter'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); if (!busy) dropZone.classList.add('dragging'); }));
   dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging'));
   dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragging'); if (e.dataTransfer && e.dataTransfer.files.length > 0) setSelectedFile(e.dataTransfer.files[0]); });
 
@@ -243,14 +243,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const scanBtnOriginalHtml = scanBtn.innerHTML;
+
   function locking(value) {
     busy = value;
     scanBtn.disabled = value;
-    cancelBtn.hidden = !value;
+    cancelBtn.style.display = value ? 'inline-flex' : 'none';
     fileInput.disabled = value;
     urlInput.disabled = value;
     modes.forEach(m => $('tab-' + m).disabled = value);
-    scanBtn.textContent = value ? 'TARAMA DEVAM EDIYOR…' : 'BASLAT';
+    if (value) {
+      scanBtn.innerHTML = 'TARAMA DEVAM EDIYOR…<div class="analyze-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg></div>';
+    } else {
+      scanBtn.innerHTML = scanBtnOriginalHtml;
+    }
   }
 
   cancelBtn.addEventListener('click', () => controller?.abort());
@@ -259,7 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function flatten(data) {
     if (!data) return [];
     if (data.type === 'file') return [{ ...data, target: data.filename || data.file_hash }];
-    if (data.type === 'url') return (data.results || []).map(r => ({ ...r, target: r.url }));
+    if (data.type === 'url') return (data.results || []).map(r => ({ ...r, target: r.url || r.url_scanned || r.target }));
     const rows = [];
     (data.results || []).forEach(mail => {
       (mail.urls_found || []).forEach(r => rows.push({ ...r, target: r.url, mail_subject: mail.subject }));
@@ -285,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const first = (report.results || [])[0];
       return {
         type: 'url',
-        url_scanned: first ? first.url : '',
+        url_scanned: first ? (first.url || first.url_scanned) : '',
         verdict: first ? first.verdict : 'unknown',
         virustotal: first ? first.virustotal : {},
         urlhaus: first ? first.urlhaus : {},
@@ -467,7 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await navigator.clipboard.writeText(iocs().map(([t, v]) => t + ': ' + (t === 'sha256' ? v : defang(v))).join('\n'));
       $('copy-iocs').textContent = 'Kopyalandi';
       setTimeout(() => { $('copy-iocs').textContent = 'IOC Kopyala'; }, 1500);
-    } catch { feedback('Kopyalama izni yok; IOC · CSV dugmesini kullanin.'); }
+    } catch { showFeedback('warn', 'Kopyalama izni yok', 'IOC · CSV dugmesini kullanin.'); }
   };
   $('print-report').onclick = () => window.print();
 
