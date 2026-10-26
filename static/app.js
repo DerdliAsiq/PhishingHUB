@@ -518,7 +518,10 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         scanProgress.textContent = scanMode === 'imap' ? 'Poçt qutusunun yoxlanılması…' : 'URL və phishing göstəricilərinin yoxlanılması…';
         networkTimer = setTimeout(() => controller.abort(), 90000);
-        if (urls.length === 1) {
+        if (scanMode === 'imap') {
+          data = await api('/analyze/imap', {}, signal);
+          data.type = 'imap';
+        } else if (urls.length === 1) {
           data = await api('/analyze/url', { url: urls[0] }, signal);
           data = { ...data, type: 'url', results: [data] };
         } else {

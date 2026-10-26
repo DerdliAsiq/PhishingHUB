@@ -6,7 +6,7 @@
 - **URL Scan:** VirusTotal (submit + poll + fallback lookup), URLhaus, AbuseIPDB, Pulsedive — paralel `httpx`, structured `verdict` (malicious / suspicious / clean / unknown).
 - **Toplu URL tarama (`/analyze/urls`):** 1–10 URL, tekrarların çıkartılması, geçersiz girişlerin ayrı listelenmesi, öncelik sırası.
 - **Dosya:** İstemci tarafında 2 MiB’lik parçalarla **Web Worker (SHA-256)**, dosya içeriği sunucuya gitmez; yalnız hash ve boyut `/analyze/hash` üzerinden sorgulanır. Eski multipart `/analyze/file` 50 MB limitiyle devam eder.
-- **IMAP Inbox:** UNSEEN mailler (max 10), `readonly=True` + `BODY.PEEK[]` (mail okunmuş işaretlenmez), `text/plain` + `text/html` link çıkarımı (max 10/mail), attachment SHA-256 + VT lookup (max 5/mail). `IMAP_SCAN_TOKEN` ile korumalı.
+- **IMAP Inbox:** UNSEEN mailler (max 10), `readonly=True` + `BODY.PEEK[]` (mail okunmuş işaretlenmez), `text/plain` + `text/html` link çıkarımı (max 10/mail), attachment SHA-256 + VT lookup (max 5/mail). `IMAP_USER`/`IMAP_PASS` girilmemişse `400` döner. Not: uç noktada ayrı bir token/auth koruması yoktur; herkese açık dağıtımda kısıtlamayı düşünün.
 - **Lokal phishing kanıtları:** Marka benzerliği (PayPal, Microsoft, Google, Apple), marka-subdomain, `userinfo@`, punycode, IP-hedef, çok katmanlı subdomain. Tüm bunlar `findings` listesinde, tek başına zararlılık kanıtı değildir.
 - **VirusTotal bütçe + cache:** Lokal 4 istek/dakika ve 500 istek/gün sınırı; 600 sn / 256 kayıtlı işlemci-bellek cache. Kota doluysa açık `rate_limited` durumu.
 - **Güvenlik:** Secret'lar sadece env'den (`VT_API_KEY`, `ABUSEIPDB_API_KEY`, `PULSEDIVE_API_KEY`, `IMAP_*`, `OPENROUTER_API_KEY`), frontend `escapeHtml` / DOM API (XSS koruması), `HttpUrl` validasyonu, private-IP skip.
@@ -30,7 +30,7 @@ Render: Dashboard → Environment → `VT_API_KEY`, `URLHAUS_AUTH_KEY`, `ABUSEIP
 | `POST` | `/analyze/urls` | `{urls: [...]}` (1–10) → priorite sıralı sonuçlar + hata listesi |
 | `POST` | `/analyze/hash` | `{sha256, file_size?, filename?}` → mevcut VT dosya raporu |
 | `POST` | `/analyze/file` | multipart `file` (50 MB) → hash ve VT raporu |
-| `POST` | `/analyze/imap` | UNSEEN tara → `{results[{subject, from, urls_found, attachments}]}` |
+| `POST` | `/analyze/imap` | UNSEEN tara (`IMAP_USER`/`IMAP_PASS` gerekir) → `{results[{subject, from, urls_found, attachments}]}` |
 | `POST` | `/analyze/ai-chat` | `{message, context}` → `{reply, risk, model}` (OpenRouter, key yoksa `503`) |
 | `GET` | `/health` | Tüm kaynakların konfigürasyon durumu (değerler asla dönülmez) |
 
