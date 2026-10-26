@@ -366,12 +366,12 @@ document.addEventListener('DOMContentLoaded', () => {
     drawChart('engine-chart', [
       ['Zərərli', stats.malicious || 0, verdictColors.malicious],
       ['Şübhəli', stats.suspicious || 0, verdictColors.suspicious],
-      ['Təəyyün edilməmişdir / bilinmir', (stats.undetected || 0), verdictColors.unknown],
+      ['Müəyyən edilməyib / bilinmir', (stats.undetected || 0), verdictColors.unknown],
       ['Təmiz / Harmless', stats.harmless || 0, '#2c6735'],
-      ['Hata / digər', ((stats.timeout || 0) + (stats.failure || 0) + (stats['type-unsupported'] || 0) + (stats['confirmed-timeout'] || 0)), verdictColors.unknown]
+      ['Xəta / digər', ((stats.timeout || 0) + (stats.failure || 0) + (stats['type-unsupported'] || 0) + (stats['confirmed-timeout'] || 0)), verdictColors.unknown]
     ]);
 
-    const priorityLabel = { high: 'Yüksək', medium: 'Orta', needs_data: 'Məlumat çatışır', low: 'Aşağı' };
+    const priorityLabel = { high: 'Yüksək', medium: 'Orta', needs_data: 'Məlumat çatışmır', low: 'Aşağı' };
     $('triage-rows').replaceChildren();
     $('findings').replaceChildren();
     records.forEach(r => {
@@ -391,7 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const td = document.createElement('td');
         td.textContent = statusText(v);
         if (v) {
-          const details = [v.detail, v.error, v.cached ? 'Onbellekten alindi' : null, v.last_analysis_date ? 'Rapor: ' + new Date(v.last_analysis_date * 1000).toLocaleString('tr-TR') : null].filter(Boolean).join(' · ');
+          const details = [v.detail, v.error, v.cached ? 'Keşdən alınıb' : null, v.last_analysis_date ? 'Hesabat: ' + new Date(v.last_analysis_date * 1000).toLocaleString('tr-TR') : null].filter(Boolean).join(' · ');
           if (details) td.appendChild(document.createElement('small')).textContent = details;
         }
         tr.appendChild(td);
@@ -406,7 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const p1 = document.createElement('p');
         p1.textContent = f.explanation;
         const p2 = document.createElement('p');
-        p2.textContent = 'Hedef: ' + r.target + ' · Kaynak: ' + (f.source || 'Lokal kural');
+        p2.textContent = 'Hədəf: ' + r.target + ' · Mənbə: ' + (f.source || 'Lokal qayda');
         item.appendChild(strong);
         item.appendChild(p1);
         item.appendChild(p2);
@@ -415,14 +415,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     if (!$('findings').children.length) {
       $('findings').appendChild(document.createElement('p')).className = 'empty';
-      $('findings').lastElementChild.textContent = 'Lokal kural ilə göstərici tapılmayıb. Bu, təhlükəsizlik təminatına zəmin deyil.';
+      $('findings').lastElementChild.textContent = 'Lokal qayda ilə göstərici tapılmayıb. Bu, təhlükəsizlik zəmanəti demək deyil.';
     }
 
     $('next-steps').replaceChildren();
-    const steps = ['Şübhəli linklər və faylları açmayın; ünvanları defang formatında paylaşın.'];
-    if (totals.malicious || totals.suspicious || records.some(r => r.priority === 'medium')) steps.push('Təşkilatın DNS, proxy və e-poçt jurnalində bu göstəriciləri axtarın. Təəyyün olunan hədəflər üçün təşkilat qaidalarına uyğun bloklama qərarı verin.');
-    if (totals.unknown) steps.push('Məlumat çatışır hədəfləri təhlükəsiz hesab etməyin. Mənbə statuslarını yoxlayın; kota bitibsə sonra təkrar edin.');
-    steps.push('Şifrələr daxil edilibsə, təşkilatın hesab təhlükəsizlik prosedurunu başlatın. Əlavə IP ünvanını sübut olmadan bloklamayın.');
+    const steps = ['Şübhəli link və faylları açmayın; ünvanları defang formatında paylaşın.'];
+    if (totals.malicious || totals.suspicious || records.some(r => r.priority === 'medium')) steps.push('Təşkilatın DNS, proxy və e-poçt jurnalında bu göstəriciləri axtarın. Müəyyən edilmiş hədəflər üçün təşkilatın qaydalarına uyğun bloklama qərarı verin.');
+    if (totals.unknown) steps.push('Məlumatı çatışmayan hədəfləri təhlükəsiz hesab etməyin. Mənbə statuslarını yoxlayın; kota bitibsə sonra təkrarlayın.');
+    steps.push('Şifrələr daxil edilibsə, təşkilatın hesab təhlükəsizlik prosedurunu başladın. Əlavə IP ünvanını sübut olmadan bloklamayın.');
     steps.forEach((s, i) => {
       const p = document.createElement('p');
       p.className = 'step-item';
@@ -471,9 +471,9 @@ document.addEventListener('DOMContentLoaded', () => {
   $('copy-iocs').onclick = async () => {
     try {
       await navigator.clipboard.writeText(iocs().map(([t, v]) => t + ': ' + (t === 'sha256' ? v : defang(v))).join('\n'));
-      $('copy-iocs').textContent = 'Kopyalandi';
+      $('copy-iocs').textContent = 'Kopyalandı';
       setTimeout(() => { $('copy-iocs').textContent = 'IOC Kopyala'; }, 1500);
-    } catch { showFeedback('warn', 'Kopyalama izni yok', 'IOC · CSV dugmesini kullanin.'); }
+    } catch { showFeedback('warn', 'Kopyalama icazəsi yoxdur', 'IOC · CSV düyməsini istifadə edin.'); }
   };
   $('print-report').onclick = () => window.print();
 
@@ -497,9 +497,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (scanMode === 'url') {
       urls = urlInput.value.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
-      if (!urls.length || urls.length > 10) { showFeedback('error', 'Dogrulama Hatasi', 'Her satirda bir URL olmakla 1–10 adres girin.'); return; }
+      if (!urls.length || urls.length > 10) { showFeedback('error', 'Doğrulama xətası', 'Hər sətirdə bir URL olmaqla 1–10 ünvan daxil edin.'); return; }
     }
-    if (scanMode === 'file' && !selectedFile) { showFeedback('error', 'Dogrulama Hatasi', 'Once bir dosya secin.'); return; }
+    if (scanMode === 'file' && !selectedFile) { showFeedback('error', 'Doğrulama xətası', 'Əvvəlcə bir fayl seçin.'); return; }
 
     locking(true);
     controller = new AbortController();
@@ -511,10 +511,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (scanMode === 'file') {
         const f = selectedFile;
         const digest = await hashFile(f, signal);
-        scanProgress.textContent = 'Hash hazir. Mevcut hesap araniyor…';
+        scanProgress.textContent = 'Hash hazırdır. Mövcud hesabat axtarılır…';
         networkTimer = setTimeout(() => controller.abort(), 60000);
         data = await api('/analyze/hash', { sha256: digest, file_size: f.size }, signal);
-        data.filename = f.name; // Dosya adi tarayicida kalir, sunucuya gitmez
+        data.filename = f.name; // Fayl adı brauzerdə qalır, serverə getmir
       } else {
         scanProgress.textContent = scanMode === 'imap' ? 'Poçt qutusunun yoxlanılması…' : 'URL və phishing göstəricilərinin yoxlanılması…';
         networkTimer = setTimeout(() => controller.abort(), 90000);
@@ -529,14 +529,14 @@ document.addEventListener('DOMContentLoaded', () => {
       report = { ...data, type: scanMode, checked_at: data.checked_at || new Date().toISOString() };
       records = flatten(report);
       render();
-      scanProgress.textContent = 'Tarama tamamlandi.';
-      if (data.errors?.length) showFeedback('warn', 'Giris uyarilari', data.errors.map(e => escapeHtml(e.input) + ': ' + escapeHtml(e.detail)).join('\n'));
+      scanProgress.textContent = 'Tarama tamamlandı.';
+      if (data.errors?.length) showFeedback('warn', 'Giriş xəbərdarlıqları', data.errors.map(e => escapeHtml(e.input) + ': ' + escapeHtml(e.detail)).join('\n'));
       dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
       updateAiContextLine();
       autoAnalyze();
     } catch (e) {
       clearReport();
-      showFeedback(e.name === 'AbortError' ? 'error' : 'error', 'Bağlantı Xətası', e.name === 'AbortError' ? 'Sorğu ləğv edildi və ya gözləmə müddəti bitdi. Tamamlanmamış nəticə gösterilmiyor.' : (e.message || 'Bağlantı alınamadı.'));
+      showFeedback(e.name === 'AbortError' ? 'error' : 'error', 'Bağlantı Xətası', e.name === 'AbortError' ? 'Sorğu ləğv edildi və ya gözləmə müddəti bitdi. Tamamlanmamış nəticə göstərilmir.' : (e.message || 'Bağlantı alınmadı.'));
     } finally {
       clearTimeout(networkTimer);
       worker?.terminate();
@@ -584,9 +584,9 @@ document.addEventListener('DOMContentLoaded', () => {
         (ctx.results || []).slice(0, 5).forEach((m, i) => {
           const first = (m.urls_found && m.urls_found[0]) || null;
           html += '<div>[' + (i + 1) + '] ' + escapeHtml(m.subject || '?') + ' '
-            + (first ? verdictBadge(first.verdict) : '<span class="verdict v-unknown">? linksiz</span>') + '</div>';
+            + (first ? verdictBadge(first.verdict) : '<span class="verdict v-unknown">? link yoxdur</span>') + '</div>';
         });
-        return html || 'Mektup yok.';
+        return html || 'Məktub yoxdur.';
       }
     } catch (e) { return ''; }
     return '';
@@ -603,7 +603,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let data = {};
     try { data = await response.json(); } catch { data = {}; }
     if (!response.ok) {
-      let msg = data.detail || 'AI hatasi.';
+      let msg = data.detail || 'AI xətası.';
       if (Array.isArray(msg)) msg = msg.map(d => d.msg || JSON.stringify(d)).join('; ');
       throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
     }
@@ -634,13 +634,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!aiInclude || !aiInclude.checked || aiBusy || !report) return;
     aiBusy = true;
     aiSend.disabled = true;
-    const pending = addChatMsg('assistant', 'Otomatik analiz yapiliyor…');
+    const pending = addChatMsg('assistant', 'Avtomatik analiz edilir…');
     try {
-      const data = await askAi('Bu sonucu kisaca yorumla.', getAiContext());
-      pending.innerHTML = renderMarkdownLite(data.reply || '(bos cevap)') + scanMiniBars(getAiContext());
+      const data = await askAi('Bu nəticəni qısa şərh edin.', getAiContext());
+      pending.innerHTML = renderMarkdownLite(data.reply || '(boş cavab)') + scanMiniBars(getAiContext());
       if (data.risk != null) addRiskMeter(pending, data.risk);
     } catch (e) {
-      pending.textContent = 'Otomatik analiz yapilamadi: ' + (e.message || 'hata');
+      pending.textContent = 'Avtomatik analiz alınmadı: ' + (e.message || 'xəta');
     } finally {
       aiBusy = false;
       aiSend.disabled = false;
@@ -655,13 +655,13 @@ document.addEventListener('DOMContentLoaded', () => {
     aiInput.value = '';
     aiBusy = true;
     aiSend.disabled = true;
-    const pending = addChatMsg('assistant', 'Yaziyor…');
+    const pending = addChatMsg('assistant', 'Yazır…');
     try {
       const data = await askAi(text, (aiInclude && aiInclude.checked) ? getAiContext() : null);
-      pending.innerHTML = renderMarkdownLite(data.reply || '(bos cevap)');
+      pending.innerHTML = renderMarkdownLite(data.reply || '(boş cavab)');
       if (data.risk != null) addRiskMeter(pending, data.risk);
     } catch (e) {
-      pending.textContent = 'Hata: ' + (e.message || 'AI servisine ulasilamadi.');
+      pending.textContent = 'Xəta: ' + (e.message || 'AI xidmətinə çıxış alınmadı.');
     } finally {
       aiBusy = false;
       aiSend.disabled = false;
