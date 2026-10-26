@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     clean: { cls: 'v-clean', sym: '\u2713' },
     unknown: { cls: 'v-unknown', sym: '?' }
   };
-  const VERDICT_TR = { malicious: 'zararli', suspicious: 'süpheli', clean: 'temiz', unknown: 'bilinmiyor' };
+  const VERDICT_TR = { malicious: 'zərərli', suspicious: 'şübhəli', clean: 'təmiz', unknown: 'bilmir' };
 
   function verdictKey(v) {
     const k = String(v || 'unknown').toLowerCase();
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function statusKey(s) {
     const t = String(s || '').toLowerCase();
     if (t.indexOf('malicious') >= 0 || t.indexOf('zarar') >= 0) return 'malicious';
-    if (t.indexOf('suspicious') >= 0 || t.indexOf('süpheli') >= 0 || t.indexOf('supheli') >= 0) return 'suspicious';
+    if (t.indexOf('suspicious') >= 0 || t.indexOf('şübhəli') >= 0 || t.indexOf('supheli') >= 0) return 'suspicious';
     if (t.indexOf('clean') >= 0 || t.indexOf('temiz') >= 0 || t.indexOf('tehdit kaydi yok') >= 0 || t.indexOf('kayit yok') >= 0) return 'clean';
     return 'unknown';
   }
@@ -104,14 +104,14 @@ document.addEventListener('DOMContentLoaded', () => {
     return '<div class="rb-wrap"><div class="rb-track">'
       + seg(m, DOT_COLOR.malicious) + seg(s, DOT_COLOR.suspicious)
       + seg(c, DOT_COLOR.clean) + seg(u, DOT_COLOR.unknown)
-      + '</div><div class="rb-label">VT: ' + m + ' zararli / ' + s + ' supheli / ' + c + ' temiz / ' + u + ' bilinmiyor</div></div>';
+      + '</div><div class="rb-label">VT: ' + m + ' zərərli / ' + s + ' şübhəli / ' + c + ' təmiz / ' + u + ' bilinmir</div></div>';
   }
 
   function fmtStats(stats) {
     stats = stats || {};
-    return 'Zararli=' + escapeHtml(stats.malicious != null ? stats.malicious : 0)
-      + ', Suspicious=' + escapeHtml(stats.suspicious != null ? stats.suspicious : 0)
-      + ', Temiz=' + escapeHtml(stats.harmless != null ? stats.harmless : 0);
+    return 'Zərərli=' + escapeHtml(stats.malicious != null ? stats.malicious : 0)
+      + ', Şübhəli=' + escapeHtml(stats.suspicious != null ? stats.suspicious : 0)
+      + ', Təmiz=' + escapeHtml(stats.harmless != null ? stats.harmless : 0);
   }
 
   function defang(s) {
@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (f.size > MAX_FILE_SIZE) { showFeedback('error', 'Dogrulama Hatasi', 'Dosya çok büyük (limit 50MB).'); fileInput.value = ''; return; }
     selectedFile = f;
     fileNameDisplay.textContent = f.name;
-    fileSizeDisplay.textContent = (f.size / 1048576).toFixed(2) + ' MiB · hash cihazda hesaplanacak';
+    fileSizeDisplay.textContent = (f.size / 1048576).toFixed(2) + ' MiB · hash cihazda hesablanacaq';
   }
 
   dropZone.addEventListener('click', () => { if (!busy) fileInput.click(); });
@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateAiContextLine() {
     if (!aiContextLine) return;
     if (!report) {
-      aiContextLine.textContent = 'Baglam: yok — once bir tarama yap.';
+      aiContextLine.textContent = 'Kontekst: yox — əvvəlcə bir yoxlama et.';
       return;
     }
     if (report.type === 'url') {
@@ -193,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
       aiContextLine.textContent = 'Baglam: dosya ' + (report.file_hash || '').slice(0, 16) + '…';
     } else if (report.type === 'imap') {
       const n = (report.results || []).length;
-      aiContextLine.textContent = 'Baglam: ' + n + ' e-posta taramasi';
+      aiContextLine.textContent = 'Kontekst: ' + n + ' e-poçt yoxlaması';
     } else {
       aiContextLine.textContent = 'Baglam: ' + report.type;
     }
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try { value = await resp.json(); } catch { throw new Error('Server gecerli JSON cavabi vermedi. Yeniden deneyin.'); }
     if (!resp.ok) {
       const detail = value.detail;
-      throw new Error(typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map(x => x.msg).join('; ') : 'Sorgu red edildi.');
+      throw new Error(typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map(x => x.msg).join('; ') : 'Sorğu rədd edildi.');
     }
     return value;
   }
@@ -236,9 +236,9 @@ document.addEventListener('DOMContentLoaded', () => {
       worker.onmessage = e => {
         if (e.data.error) finish(new Error(e.data.error));
         else if (e.data.hash) finish(null, e.data.hash);
-        else scanProgress.textContent = 'SHA-256 hesaplaniyor: ' + e.data.progress + '%';
+        else scanProgress.textContent = 'SHA-256 hesablanır: ' + e.data.progress + '%';
       };
-      worker.onerror = () => finish(new Error('Hash hesaplama alinamadi'));
+      worker.onerror = () => finish(new Error('Hash hesablama alınmadı'));
       worker.postMessage({ file });
     });
   }
@@ -331,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function statusText(v) {
     if (!v) return 'Uygulanmiyor';
-    return [v.verdict, v.status, v.risk, v.score != null ? 'IP skoru: ' + v.score : null].filter(Boolean).join(' · ') || 'Bilinmiyor';
+    return [v.verdict, v.status, v.risk, v.score != null ? 'IP balı: ' + v.score : null].filter(Boolean).join(' · ') || 'Bilmir';
   }
 
   // --- Render dashboard ---
@@ -346,13 +346,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     dashboard.hidden = false;
-    let meta = 'Tarama saati: ' + new Date(report.checked_at || Date.now()).toLocaleString('tr-TR');
-    if (report.type === 'url' && report.duplicates_removed != null) meta += ' · Tekrar çıkarıldı: ' + report.duplicates_removed;
+    let meta = 'Yoxlama vaxtı: ' + new Date(report.checked_at || Date.now()).toLocaleString('tr-TR');
+    if (report.type === 'url' && report.duplicates_removed != null) meta += ' · Tekrar çıxarılmış: ' + report.duplicates_removed;
     if (report.type === 'imap') meta += ' · Mektup: ' + (report.results || []).length;
     $('report-meta').textContent = meta;
 
     $('report-metrics').replaceChildren();
-    [[records.length, 'Taranan göstergeler'], [totals.malicious, 'Zararlı'], [totals.suspicious, 'Şüpheli'], [totals.unknown, 'Bilinmeyen']].forEach(([n, title]) => {
+    [[records.length, 'Yoxlanmış göstəricilər'], [totals.malicious, 'Zərərli'], [totals.suspicious, 'Şübhəli'], [totals.unknown, 'Bilinmir']].forEach(([n, title]) => {
       const card = document.createElement('div');
       card.className = 'dashboard-metric';
       card.appendChild(document.createElement('b')).textContent = n;
@@ -361,17 +361,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const verdictColors = { malicious: '#a02c22', suspicious: '#8a5f0e', clean: '#2c6735', unknown: '#8b8880' };
-    const verdictLabels = { malicious: 'Zararli', suspicious: 'Supheli', clean: 'Temiz', unknown: 'Bilinmeyen' };
+    const verdictLabels = { malicious: 'Zərərli', suspicious: 'Şübhəli', clean: 'Təmiz', unknown: 'Bilinmir' };
     drawChart('verdict-chart', Object.entries(totals).map(([k, n]) => [verdictLabels[k], n, verdictColors[k]]));
     drawChart('engine-chart', [
       ['Zararli', stats.malicious || 0, verdictColors.malicious],
       ['Supheli', stats.suspicious || 0, verdictColors.suspicious],
-      ['Tespit edilmedi / bilinmiyor', (stats.undetected || 0), verdictColors.unknown],
+      ['Təəyyün edilməmişdir / bilinmir', (stats.undetected || 0), verdictColors.unknown],
       ['Temiz / Harmless', stats.harmless || 0, '#2c6735'],
       ['Hata / diger', ((stats.timeout || 0) + (stats.failure || 0) + (stats['type-unsupported'] || 0) + (stats['confirmed-timeout'] || 0)), verdictColors.unknown]
     ]);
 
-    const priorityLabel = { high: 'Yüksek', medium: 'Orta', needs_data: 'Bilgi Eksik', low: 'Aşağı' };
+    const priorityLabel = { high: 'Yüksək', medium: 'Orta', needs_data: 'Məlumat çatışır', low: 'Aşağı' };
     $('triage-rows').replaceChildren();
     $('findings').replaceChildren();
     records.forEach(r => {
@@ -415,14 +415,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     if (!$('findings').children.length) {
       $('findings').appendChild(document.createElement('p')).className = 'empty';
-      $('findings').lastElementChild.textContent = 'Lokal kural ile gösterici bulunamadı. Bu, güvenlik garantisi değildir.';
+      $('findings').lastElementChild.textContent = 'Lokal kural ilə göstərici tapılmayıb. Bu, təhlükəsizlik təminatına zəmin deyil.';
     }
 
     $('next-steps').replaceChildren();
-    const steps = ['Süpheli link ve dosyalari acmayin; adresleri defang formatinda paylasin.'];
-    if (totals.malicious || totals.suspicious || records.some(r => r.priority === 'medium')) steps.push('Teşkilatın DNS, proxy ve e-posta kayıtlarında bu göstergeleri aratın. Tespit edilen hedefler için kurumsal kurallara uygun bloklama kararı verin.');
-    if (totals.unknown) steps.push('Bilgi eksik hedefleri tehlukesiz saymayin. Kaynak durumlarini kontrol edin; kota bittiyse sonra tekrar edin.');
-    steps.push('Şifreler girildiyse, kurumsal hesap güvenlik prosedürünü başlatın. Ek IP adresini kanıt olmadan engellemeyin.');
+    const steps = ['Şübhəli linklər və faylları açmayın; ünvanları defang formatında paylaşın.'];
+    if (totals.malicious || totals.suspicious || records.some(r => r.priority === 'medium')) steps.push('Təşkilatın DNS, proxy və e-poçt jurnalində bu göstəriciləri axtarın. Təəyyün olunan hədəflər üçün təşkilat qaidalarına uyğun bloklama qərarı verin.');
+    if (totals.unknown) steps.push('Məlumat çatışır hədəfləri təhlükəsiz hesab etməyin. Mənbə statuslarını yoxlayın; kota bitibsə sonra təkrar edin.');
+    steps.push('Şifrələr daxil edilibsə, təşkilatın hesab təhlükəsizlik prosedurunu başlatın. Əlavə IP ünvanını sübut olmadan bloklamayın.');
     steps.forEach((s, i) => {
       const p = document.createElement('p');
       p.className = 'step-item';
@@ -432,7 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!records.length) {
       const p = document.createElement('p');
       p.className = 'step-item';
-      p.textContent = 'Taranacak göstergeler bulunamadı; mektubun güvenli olduğu sonucunu çıkaramayın.';
+      p.textContent = 'Yoxlanacaq göstəricilər tapılmayıb; məktubun təhlükəsiz olduğu nəticəsini çıxarmayın.';
       $('next-steps').appendChild(p);
     }
   }
@@ -516,7 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
         data = await api('/analyze/hash', { sha256: digest, file_size: f.size }, signal);
         data.filename = f.name; // Dosya adi tarayicida kalir, sunucuya gitmez
       } else {
-        scanProgress.textContent = scanMode === 'imap' ? 'Posta kutusu kontrol ediliyor…' : 'URL ve phishing göstergeleri kontrol ediliyor…';
+        scanProgress.textContent = scanMode === 'imap' ? 'Poçt qutusunun yoxlanılması…' : 'URL və phishing göstəricilərinin yoxlanılması…';
         networkTimer = setTimeout(() => controller.abort(), 90000);
         if (urls.length === 1) {
           data = await api('/analyze/url', { url: urls[0] }, signal);
@@ -530,13 +530,13 @@ document.addEventListener('DOMContentLoaded', () => {
       records = flatten(report);
       render();
       scanProgress.textContent = 'Tarama tamamlandi.';
-      if (data.errors?.length) showFeedback('warn', 'Giris uyarilari', data.errors.map(e => e.input + ': ' + e.detail).join('\n'));
+      if (data.errors?.length) showFeedback('warn', 'Giris uyarilari', data.errors.map(e => escapeHtml(e.input) + ': ' + escapeHtml(e.detail)).join('\n'));
       dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
       updateAiContextLine();
       autoAnalyze();
     } catch (e) {
       clearReport();
-      showFeedback(e.name === 'AbortError' ? 'error' : 'error', 'Baglanti Hatası', e.name === 'AbortError' ? 'Sorgu iptal edildi veya bekleme suresi doldu. Tamamlanmamis sonuc goruntulenmiyor.' : (e.message || 'Baglanti alinamadi.'));
+      showFeedback(e.name === 'AbortError' ? 'error' : 'error', 'Bağlantı Xətası', e.name === 'AbortError' ? 'Sorğu ləğv edildi və ya gözləmə müddəti bitdi. Tamamlanmamış nəticə gösterilmiyor.' : (e.message || 'Bağlantı alınamadı.'));
     } finally {
       clearTimeout(networkTimer);
       worker?.terminate();
