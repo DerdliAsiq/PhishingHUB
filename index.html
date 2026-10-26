@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="az">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="PhishingHUB — şüpheli URL, dosya ve IMAP mailbox analizi için pasif güvenlik çalışma alanı." />
+    <meta name="description" content="PhishingHUB — şüpheli URL, dosya və IMAP poçt qutusunun pasif təhlükəsizlik analizi." />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232457e6' stroke-width='2'%3E%3Cpath d='M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8'/%3E%3Cpolyline points='16 6 12 2 8 6'/%3E%3Cline x1='12' y1='2' x2='12' y2='15'/%3E%3C/svg%3E" />
     <title>PhishingHUB — Passive Security Workspace</title>
 
@@ -76,24 +76,24 @@
                             </button>
                         </div>
 
-                        <!-- URL INPUT UI (tekli + toplu) -->
+                        <!-- URL INPUT UI -->
                         <div class="input-stack" id="ui-url">
-                            <label class="input-label" for="target-url">Target Address(es)</label>
+                            <label class="input-label" for="target-url">Hədəf(lar)</label>
                             <div class="url-input-wrap">
                                 <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line>
-                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path>
                                 </svg>
-                                <textarea id="target-url" placeholder="https://suspicious-link.com/invoice.pdf
-https://another-link.example/x" autocomplete="off" maxlength="65536" rows="3"></textarea>
+                                <textarea id="target-url" placeholder="https://sus-link.example/invoice.pdf
+https://diger-link.example/x" autocomplete="off" maxlength="65536" rows="3"></textarea>
                             </div>
-                            <p class="field-help">Her satıra bir URL yazın (maks. 10 benzersiz). Tek URL tekli tarama; birden fazla toplu tarama olarak işlenir.</p>
+                            <p class="field-help">Hər sətirdə bir URL yazın (maks. 10 ünsiyyət). Tək URL üsulu; bir neçə URL üsulu olaraq icra olunur.</p>
                         </div>
 
                         <!-- FILE UPLOAD UI -->
                         <div class="input-stack" id="ui-file" style="display: none;">
-                            <label class="input-label">Target File</label>
-                            <div class="drop-zone" id="file-drop-zone" role="button" tabindex="0" aria-label="Dosya seç veya sürükle bırak">
+                            <label class="input-label">Hədəf Fayl</label>
+                            <div class="drop-zone" id="file-drop-zone" role="button" tabindex="0" aria-label="Faylı seç və sürüşdür">
                                 <div class="drop-icon">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
@@ -101,25 +101,25 @@ https://another-link.example/x" autocomplete="off" maxlength="65536" rows="3"></
                                     </svg>
                                 </div>
                                 <div>
-                                    <strong id="file-name-display">Click to browse or drop file</strong>
-                                    <span id="file-size-display">Max memory-safe stream limit: 50MB</span>
+                                    <strong id="file-name-display">Axtar və ya sürüşdür</strong>
+                                    <span id="file-size-display">Maksimum yadda-səməni stream límite: 50MB</span>
                                 </div>
                                 <input type="file" id="file-input" style="display: none;">
                             </div>
-                            <p class="field-help">Dosya istemci tarafında 2 MiB’lik parçalarla SHA-256’lanır; dosya içeriği sunucuya gitmez, yalnız hash gönderilir.</p>
+                            <p class="field-help">Faylı istəmcidir tərəfində 2 MiB’lik parçalarla SHA-256’lanır; fayl təbəqi serverə getmir, yalnız hash göndərilir.</p>
                         </div>
 
                         <!-- IMAP INBOX UI -->
                         <div class="input-stack" id="ui-imap" style="display: none;">
-                            <label class="input-label">IMAP Mailbox Polling</label>
+                            <label class="input-label">IMAP Poçt Qutusunun Yoxlanılması</label>
                             <div style="padding: 16px; border: 1px solid #bbb9b1; background: #fbfaf6; font-size: 12px; color: var(--muted); line-height: 1.5;">
-                                This module triggers backend polling to fetch unread emails via IMAP (Port 993, READONLY + BODY.PEEK), extracts embedded links, and runs them through multi-engine intelligence.
+                                Bu modul IMAP (Port 993, READONLY + BODY.PEEK) vasitəsilə oxunmamış mesajları gətirən backend yoxlamasını başlatır, daxil edilmiş linkləri əyəzdir və çoxlu mühəndislik istiqamiyyətində icra edir.
                             </div>
-                            <p class="field-help">Ensure environment variables (IMAP_USER, IMAP_PASS) are active.</p>
+                            <p class="field-help">Mühit dəyişənlərinin (IMAP_USER, IMAP_PASS) aktiv olduğundan əmin olun.</p>
                         </div>
 
                         <button class="analyze-button" id="scan-btn">
-                            INITIATE SCAN
+                            YOXLAMA BAŞLAT
                             <div class="analyze-icon">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -128,7 +128,7 @@ https://another-link.example/x" autocomplete="off" maxlength="65536" rows="3"></
                             </div>
                         </button>
                         <button class="analyze-button analyze-cancel" id="cancel-scan" style="display:none;margin-left:8px;">
-                            İptal
+                            Ləğv et
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
                                 <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -142,7 +142,7 @@ https://another-link.example/x" autocomplete="off" maxlength="65536" rows="3"></
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                             </svg>
-                            <span>Traffic is dynamically routed through Threat Intelligence APIs.</span>
+                            <span>Trafik dinamik olaraq Təhlükə Xəbərdarlıq API-ləri aracılığı ilə yönəldilir.</span>
                         </div>
                     </div>
                 </div>
@@ -152,33 +152,33 @@ https://another-link.example/x" autocomplete="off" maxlength="65536" rows="3"></
             <section class="ai-section" id="dashboard" hidden aria-live="polite">
                 <div class="workspace-card ai-card">
                     <div class="workspace-topline">
-                        <div><span class="section-kicker">EVIDENCE & TRIAGE</span><h2>Analiz Sonuçları</h2></div>
+                        <div><span class="section-kicker">EVIDENCE & TRIAGE</span><h2>Analiz Nəticələri</h2></div>
                         <div class="dashboard-actions">
                             <button id="export-json" class="copy-btn">JSON</button>
                             <button id="export-csv" class="copy-btn">IOC · CSV</button>
                             <button id="copy-iocs" class="copy-btn">IOC Kopyala</button>
-                            <button id="print-report" class="copy-btn">PDF / Çap</button>
+                            <button id="print-report" class="copy-btn">PDF / Nəşr</button>
                         </div>
                     </div>
                     <p id="report-meta" class="field-help"></p>
                     <div class="dashboard-metrics" id="report-metrics"></div>
                     <div class="dashboard-grid">
                         <article class="dashboard-panel">
-                            <h3>Sonuç Dağılımı</h3>
+                            <h3>Nəticələrin Bölgüsü</h3>
                             <div id="verdict-chart"></div>
                         </article>
                         <article class="dashboard-panel">
-                            <h3>Antivirus Motoru Sonuçları</h3>
+                            <h3>Antivirus Motoru Nəticələri</h3>
                             <div id="engine-chart"></div>
-                            <p class="field-help">“Aşkarlanmayıb” temelli temizlik garantisi değildir. Toplu tarama sırasında motorların raporlarıyla ilgili sayıların toplamıdır.</p>
+                            <p class="field-help">“Təmiz” təmilli təhlükəsiyyət təminatı deyil. Toplu yoxlama zamanı motorların raportları ilə bağlı ədədlərin cəmiDIR.</p>
                         </article>
                     </div>
                     <div class="dashboard-panel">
-                        <h3>Prioritet ve Kaynaklar</h3>
+                        <h3>Öncəlik və Kaynaklar</h3>
                         <div class="table-scroll">
                             <table class="triage-table">
                                 <thead>
-                                    <tr><th>Hedef</th><th>Öncelik</th><th>Sonuç</th><th>VirusTotal</th><th>URLhaus</th><th>AbuseIPDB</th><th>Pulsedive</th></tr>
+                                    <tr><th>Hədəf</th><th>Öncəlik</th><th>Nəticə</th><th>VirusTotal</th><th>URLhaus</th><th>AbuseIPDB</th><th>Pulsedive</th></tr>
                                 </thead>
                                 <tbody id="triage-rows"></tbody>
                             </table>
@@ -186,15 +186,15 @@ https://another-link.example/x" autocomplete="off" maxlength="65536" rows="3"></
                     </div>
                     <div class="dashboard-grid">
                         <article class="dashboard-panel">
-                            <h3>Phishing Göstergeleri ve Kanıtlar</h3>
+                            <h3>Phishing Göstəriciləri və Kanatlar</h3>
                             <div id="findings"></div>
                         </article>
                         <article class="dashboard-panel">
-                            <h3>Öneriler (Sonraki Adımlar)</h3>
+                            <h3>Tövsiyələr (Növbəti Addımlar)</h3>
                             <div id="next-steps"></div>
                         </article>
                     </div>
-                    <p class="field-help">Öncelik araştırma sırasını gösterir, zararlılık yüzdesi değildir. Lokal gösterici tek başına zararlılığı teyit etmez. Hedef URL doğrudan açılmaz.</p>
+                    <p class="field-help">Öncəlik araşdırma sırasıdır, təhlükə ehtimalı faizi deyil. Lokal göstərici tək başına zərərliliyi təsdiqləməz. Hədəf URL birbaşa açılmaz.</p>
                 </div>
             </section>
 
@@ -204,16 +204,16 @@ https://another-link.example/x" autocomplete="off" maxlength="65536" rows="3"></
                         <div><span class="section-kicker">AI ASSISTANT</span><h2>Analiz Asistanı</h2></div>
                         <div class="workspace-index">MOD-02</div>
                     </div>
-                    <p class="field-help">Tarama bitince sonucu otomatik yorumlar; istersen ek soru da sorabilirsin. Linke tıklamanı asla istemez.</p>
-                    <div class="ai-context-line" id="ai-context-line">Bağlam: yok — önce bir tarama yap.</div>
+                    <p class="field-help">Yoxlama bitdikdə nəticəni avtomatik şəkildə tərcümə edir; istəyirsən əlavə sual də sorula bilərsən. Linkə klikləməyə asla isteyə bilməz.</p>
+                    <div class="ai-context-line" id="ai-context-line">Kontekst: yox — əvvəlcə bir yoxlama et.</div>
                     <div class="ai-messages" id="ai-messages" aria-live="polite">
-                        <div class="ai-msg system">Henüz soru yok. Önce bir tarama yapıp sonra sorabilirsin.</div>
+                        <div class="ai-msg system">Heç sual yoxdur. Əvvəlcə bir yoxlama et və sonra sual verə bilərsən.</div>
                     </div>
                     <div class="ai-input-row">
-                        <input type="text" id="ai-input" placeholder="örn. Bu sonuç ne anlama geliyor?" autocomplete="off" maxlength="2000" />
+                        <input type="text" id="ai-input" placeholder="məs. Bu nəticə nəfədir?" autocomplete="off" maxlength="2000" />
                         <button class="ai-send" id="ai-send">SOR</button>
                     </div>
-                    <label class="ai-options"><input type="checkbox" id="ai-include" checked /> Son tarama sonucunu ekle</label>
+                    <label class="ai-options"><input type="checkbox" id="ai-include" checked /> Son yoxlamanın nəticəsini əlavə et</label>
                 </div>
             </section>
         </main>

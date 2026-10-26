@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     clean: { cls: 'v-clean', sym: '\u2713' },
     unknown: { cls: 'v-unknown', sym: '?' }
   };
-  const VERDICT_TR = { malicious: 'zərərli', suspicious: 'şübhəli', clean: 'təmiz', unknown: 'bilmir' };
+  const VERDICT_TR = { malicious: 'zərərli', suspicious: 'şübhəli', clean: 'təmiz', unknown: 'bilinmir' };
 
   function verdictKey(v) {
     const k = String(v || 'unknown').toLowerCase();
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const t = String(s || '').toLowerCase();
     if (t.indexOf('malicious') >= 0 || t.indexOf('zarar') >= 0) return 'malicious';
     if (t.indexOf('suspicious') >= 0 || t.indexOf('şübhəli') >= 0 || t.indexOf('supheli') >= 0) return 'suspicious';
-    if (t.indexOf('clean') >= 0 || t.indexOf('temiz') >= 0 || t.indexOf('tehdit kaydi yok') >= 0 || t.indexOf('kayit yok') >= 0) return 'clean';
+    if (t.indexOf('clean') >= 0 || t.indexOf('təmiz') >= 0 || t.indexOf('tehdit kaydı yok') >= 0 || t.indexOf('kayıt yok') >= 0) return 'clean';
     return 'unknown';
   }
 
@@ -128,8 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!f) return;
     clearReport();
     selectedFile = null;
-    if (!f.size) { fileNameDisplay.textContent = 'Bos dosya kabul edilmez'; fileSizeDisplay.textContent = ''; return; }
-    if (f.size > MAX_FILE_SIZE) { showFeedback('error', 'Dogrulama Hatasi', 'Dosya çok büyük (limit 50MB).'); fileInput.value = ''; return; }
+    if (!f.size) { fileNameDisplay.textContent = 'Boş fayl qəbul edilmir'; fileSizeDisplay.textContent = ''; return; }
+    if (f.size > MAX_FILE_SIZE) { showFeedback('error', 'Doğrulama xətası', 'Fayl çox böyükdür (limit 50MB).'); fileInput.value = ''; return; }
     selectedFile = f;
     fileNameDisplay.textContent = f.name;
     fileSizeDisplay.textContent = (f.size / 1048576).toFixed(2) + ' MiB · hash cihazda hesablanacaq';
@@ -188,14 +188,14 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (report.type === 'url') {
-      aiContextLine.textContent = 'Baglam: URL ' + (report.url_scanned || '') + ' (' + (VERDICT_TR[verdictKey(report.verdict)] || '') + ')';
+      aiContextLine.textContent = 'Kontekst: URL ' + (report.url_scanned || '') + ' (' + (VERDICT_TR[verdictKey(report.verdict)] || '') + ')';
     } else if (report.type === 'file') {
-      aiContextLine.textContent = 'Baglam: dosya ' + (report.file_hash || '').slice(0, 16) + '…';
+      aiContextLine.textContent = 'Kontekst: fayl ' + (report.file_hash || '').slice(0, 16) + '…';
     } else if (report.type === 'imap') {
       const n = (report.results || []).length;
       aiContextLine.textContent = 'Kontekst: ' + n + ' e-poçt yoxlaması';
     } else {
-      aiContextLine.textContent = 'Baglam: ' + report.type;
+      aiContextLine.textContent = 'Kontekst: ' + report.type;
     }
   }
 
@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
       signal
     });
     let value;
-    try { value = await resp.json(); } catch { throw new Error('Server gecerli JSON cavabi vermedi. Yeniden deneyin.'); }
+    try { value = await resp.json(); } catch { throw new Error('Server düzgün JSON cavabı vermədi. Yenidən cəhd edin.'); }
     if (!resp.ok) {
       const detail = value.detail;
       throw new Error(typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map(x => x.msg).join('; ') : 'Sorğu rədd edildi.');
@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Client-side SHA-256 via Web Worker ---
   function hashFile(file, signal) {
     return new Promise((resolve, reject) => {
-      if (!window.Worker) { reject(new Error('Bu tarayici Web Worker desteklemiyor. Guncel bir tarayici kullanin.')); return; }
+      if (!window.Worker) { reject(new Error('Bu brauzer Web Worker dəstəkləmir. Yenilənmiş brauzer istifadə edin.')); return; }
       worker = new Worker('/static/hash-worker.js');
       let settled = false;
       const finish = (err, value) => {
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
         worker = null;
         err ? reject(err) : resolve(value);
       };
-      const cancel = () => finish(new DOMException('Iptal edildi', 'AbortError'));
+      const cancel = () => finish(new DOMException('Ləğv edildi', 'AbortError'));
       signal.addEventListener('abort', cancel, { once: true });
       if (signal.aborted) { cancel(); return; }
       worker.onmessage = e => {
@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
     urlInput.disabled = value;
     modes.forEach(m => $('tab-' + m).disabled = value);
     if (value) {
-      scanBtn.innerHTML = 'TARAMA DEVAM EDIYOR…<div class="analyze-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg></div>';
+      scanBtn.innerHTML = 'TARAMA DAVAM EDİR…<div class="analyze-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg></div>';
     } else {
       scanBtn.innerHTML = scanBtnOriginalHtml;
     }
@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const root = $(id);
     root.replaceChildren();
     const total = rows.reduce((a, r) => a + r[1], 0);
-    if (!total) { root.append(document.createTextNode('Grafik icin dogrulanmis bilgi yok.')); return; }
+    if (!total) { root.append(document.createTextNode('Qrafik üçün təsdiqlənmiş məlumat yoxdur.')); return; }
     rows.forEach(([label, n, color]) => {
       const row = document.createElement('div');
       row.className = 'chart-row';
@@ -330,8 +330,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function statusText(v) {
-    if (!v) return 'Uygulanmiyor';
-    return [v.verdict, v.status, v.risk, v.score != null ? 'IP balı: ' + v.score : null].filter(Boolean).join(' · ') || 'Bilmir';
+    if (!v) return 'Tətbiq edilmir';
+    return [v.verdict, v.status, v.risk, v.score != null ? 'IP balı: ' + v.score : null].filter(Boolean).join(' · ') || 'Bilinmir';
   }
 
   // --- Render dashboard ---
@@ -347,8 +347,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     dashboard.hidden = false;
     let meta = 'Yoxlama vaxtı: ' + new Date(report.checked_at || Date.now()).toLocaleString('tr-TR');
-    if (report.type === 'url' && report.duplicates_removed != null) meta += ' · Tekrar çıxarılmış: ' + report.duplicates_removed;
-    if (report.type === 'imap') meta += ' · Mektup: ' + (report.results || []).length;
+    if (report.type === 'url' && report.duplicates_removed != null) meta += ' · Təkrar çıxarılmış: ' + report.duplicates_removed;
+    if (report.type === 'imap') meta += ' · Məktub: ' + (report.results || []).length;
     $('report-meta').textContent = meta;
 
     $('report-metrics').replaceChildren();
@@ -364,11 +364,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const verdictLabels = { malicious: 'Zərərli', suspicious: 'Şübhəli', clean: 'Təmiz', unknown: 'Bilinmir' };
     drawChart('verdict-chart', Object.entries(totals).map(([k, n]) => [verdictLabels[k], n, verdictColors[k]]));
     drawChart('engine-chart', [
-      ['Zararli', stats.malicious || 0, verdictColors.malicious],
-      ['Supheli', stats.suspicious || 0, verdictColors.suspicious],
+      ['Zərərli', stats.malicious || 0, verdictColors.malicious],
+      ['Şübhəli', stats.suspicious || 0, verdictColors.suspicious],
       ['Təəyyün edilməmişdir / bilinmir', (stats.undetected || 0), verdictColors.unknown],
-      ['Temiz / Harmless', stats.harmless || 0, '#2c6735'],
-      ['Hata / diger', ((stats.timeout || 0) + (stats.failure || 0) + (stats['type-unsupported'] || 0) + (stats['confirmed-timeout'] || 0)), verdictColors.unknown]
+      ['Təmiz / Harmless', stats.harmless || 0, '#2c6735'],
+      ['Hata / digər', ((stats.timeout || 0) + (stats.failure || 0) + (stats['type-unsupported'] || 0) + (stats['confirmed-timeout'] || 0)), verdictColors.unknown]
     ]);
 
     const priorityLabel = { high: 'Yüksək', medium: 'Orta', needs_data: 'Məlumat çatışır', low: 'Aşağı' };
